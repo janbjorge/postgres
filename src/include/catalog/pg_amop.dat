@@ -3250,4 +3250,10 @@
   amoprighttype => 'point', amopstrategy => '7', amopopr => '@>(box,point)',
   amopmethod => 'brin' },
 
+# grain timestamptz_ops: grain answers no scans; its opfamily lists equality
+# only so that the opclass has a member
+{ amopfamily => 'grain/timestamptz_ops', amoplefttype => 'timestamptz',
+  amoprighttype => 'timestamptz', amopstrategy => '1',
+  amopopr => '=(timestamptz,timestamptz)', amopmethod => 'grain' },
+
 ]

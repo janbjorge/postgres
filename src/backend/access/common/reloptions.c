@@ -18,6 +18,7 @@
 #include <float.h>
 
 #include "access/gist_private.h"
+#include "access/grain.h"
 #include "access/hash.h"
 #include "access/heaptoast.h"
 #include "access/htup_details.h"
@@ -609,6 +610,33 @@ static relopt_enum enumRelOpts[] =
 
 static relopt_string stringRelOpts[] =
 {
+	{
+		{
+			"buckets",
+			"Bucket widths of a grain index, finest first",
+			RELOPT_KIND_GRAIN,
+			AccessExclusiveLock
+		},
+		0, true, grain_validate_buckets, NULL, NULL
+	},
+	{
+		{
+			"origin",
+			"Where the buckets of a grain index start",
+			RELOPT_KIND_GRAIN,
+			AccessExclusiveLock
+		},
+		0, true, grain_validate_origin, NULL, NULL
+	},
+	{
+		{
+			"delay",
+			"How long a grain index waits after a bucket ends before it summarizes it",
+			RELOPT_KIND_GRAIN,
+			ShareUpdateExclusiveLock
+		},
+		0, true, grain_validate_delay, NULL, NULL
+	},
 	/* list terminator */
 	{{NULL}}
 };
