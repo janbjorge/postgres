@@ -308,5 +308,7 @@
   opfmethod => 'hash', opfname => 'multirange_ops' },
 { oid => '6158',
   opfmethod => 'gist', opfname => 'multirange_ops' },
+{ oid => '9758',
+  opfmethod => 'grain', opfname => 'timestamptz_ops' },
 
 ]

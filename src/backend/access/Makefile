@@ -13,6 +13,7 @@ SUBDIRS	    = \
 	common \
 	gin \
 	gist \
+	grain \
 	hash \
 	heap \
 	index \
