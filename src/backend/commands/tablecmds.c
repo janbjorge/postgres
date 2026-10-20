@@ -17295,6 +17295,13 @@ ATPrepSetTableSpace(AlteredTableInfo *tab, Relation rel, const char *tablespacen
 {
 	Oid			tablespaceId;
 
+	/* A grain index's summary and marker tables would stay behind */
+	if (rel->rd_rel->relkind == RELKIND_INDEX && rel->rd_rel->relam == GRAIN_AM_OID)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("cannot move grain index \"%s\" to another tablespace",
+						RelationGetRelationName(rel))));
+
 	/* Check that the tablespace exists */
 	tablespaceId = get_tablespace_oid(tablespacename, false);
 

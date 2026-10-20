@@ -4120,6 +4120,16 @@ ReindexRelationConcurrently(const ReindexStmt *stmt, Oid relationOid, const Rein
 		if (indexRel->rd_rel->relpersistence == RELPERSISTENCE_TEMP)
 			elog(ERROR, "cannot reindex a temporary table concurrently");
 
+		/*
+		 * The swap below would move the dependencies of a grain index's
+		 * summary and marker tables to the index that is then dropped.
+		 */
+		if (indexRel->rd_rel->relam == GRAIN_AM_OID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("cannot reindex grain index \"%s\" concurrently",
+							RelationGetRelationName(indexRel))));
+
 		pgstat_progress_start_command(PROGRESS_COMMAND_CREATE_INDEX, idx->tableId);
 
 		progress_vals[0] = PROGRESS_CREATEIDX_COMMAND_REINDEX_CONCURRENTLY;
