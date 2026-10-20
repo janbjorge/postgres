@@ -982,6 +982,8 @@ ExecSimpleRelationUpdate(ResultRelInfo *resultRelInfo,
 				flags |= EIIT_NO_DUPE_ERROR;
 			if (update_indexes == TU_Summarizing)
 				flags |= EIIT_ONLY_SUMMARIZING;
+			ExecNotifyIndexesOfDelete(resultRelInfo, estate, tid, searchslot,
+									  update_indexes == TU_Summarizing);
 			recheckIndexes = ExecInsertIndexTuples(resultRelInfo,
 												   estate, flags,
 												   slot, conflictindexes,
@@ -1036,6 +1038,11 @@ ExecSimpleRelationDelete(ResultRelInfo *resultRelInfo,
 	{
 		/* OK, delete the tuple */
 		simple_table_tuple_delete(rel, tid, estate->es_snapshot);
+
+		/* Tell the indexes that want to hear of deletes */
+		if (rel->rd_rel->relhasindex)
+			ExecNotifyIndexesOfDelete(resultRelInfo, estate, tid, searchslot,
+									  false);
 
 		/* AFTER ROW DELETE Triggers */
 		ExecARDeleteTriggers(estate, resultRelInfo,

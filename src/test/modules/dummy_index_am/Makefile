@@ -6,7 +6,7 @@ EXTENSION = dummy_index_am
 DATA = dummy_index_am--1.0.sql
 PGFILEDESC = "dummy_index_am - index access method template"
 
-REGRESS = reloptions
+REGRESS = reloptions notify_delete
 
 ifdef USE_PGXS
 PG_CONFIG = pg_config
