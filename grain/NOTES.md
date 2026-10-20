@@ -111,7 +111,7 @@ jb's questions moved the design four times. Each step and its reason is in ALTER
 **Question** (jb 2026-10-19: "i want proof that this works, and that it brings the insame powerup of that i think it will"): how much faster is a 30-day hourly count/sum/min/max when answered the way grain would answer it? That means stored rows for sealed hours, plus scans of the open hours and the dirty ones. **Decides:** whether building grain in core is worth it.
 
 **Setup:**
-- `tools/bench_read.py` (then `.sh`), an optimized master build (`build-bench/`: -O2, no asserts) with shared_buffers 2GB, autovacuum off, timezone UTC, and one pgbench client for 10 s per variant, warm.
+- `tools/bench_read.sh`, an optimized master build (`build-bench/`: -O2, no asserts) with shared_buffers 2GB, autovacuum off, timezone UTC, and one pgbench client for 10 s per variant, warm.
 - Table `(done_at timestamptz, bytes int4, status int2)`, with rows spread evenly over 90 days in time order. Window: 30 days ending at the open hour. Lag 2 h.
 - grain's read path is simulated in SQL: a summary table, a marker table and a btree on `done_at`. It is not grain itself, and it measures no write costs.
 
@@ -141,7 +141,7 @@ The summary table is 160 kB at every size from 100k up; the heap is 4224 MB at 1
 
 **Question** (jb 2026-10-19: "i was hoping for ~ 1000x on the larger 10M and 100M, why are we not hitting that?"): P1's cost was the open 2.5 hours. With levels `1 minute, 1 hour, 1 day` in one index and lag 1 minute, how close does the read path get? **Decides:** whether levels go into M1.
 
-**Setup:** as P1 (`tools/bench_levels.py`, then `.sh`; `build-bench/`), except rows spread evenly over 400 days, levels 1 minute / 1 hour / 1 day, lag 1 minute. Three queries: hourly for 30 days, daily for 30 days, one total for 365 days. The simulated read descends top-down: days, then hours, then minutes at the edges, then raw rows after W and for dirty minutes. The SQL stand-in needed `enable_hashjoin`, `enable_mergejoin` and `enable_seqscan` off to get key lookups (otherwise it hash-joined whole level tables, about 105 ms); a C reader does lookups by design.
+**Setup:** as P1 (`tools/bench_levels.sh`; `build-bench/`), except rows spread evenly over 400 days, levels 1 minute / 1 hour / 1 day, lag 1 minute. Three queries: hourly for 30 days, daily for 30 days, one total for 365 days. The simulated read descends top-down: days, then hours, then minutes at the edges, then raw rows after W and for dirty minutes. The SQL stand-in needed `enable_hashjoin`, `enable_mergejoin` and `enable_seqscan` off to get key lookups (otherwise it hash-joined whole level tables, about 105 ms); a C reader does lookups by design.
 
 **Exactness:** 0 rows differ in all 12 checks (3 queries × clean and 5 dirty minutes × 2 sizes).
 
@@ -172,7 +172,7 @@ jb asked "How sure are we about our bechmark numbers, are ther othre tests we ca
 
 **Question:** does P2's read path hold at small sizes, and how noisy is one run? **Decides:** whether the numbers can be quoted; where the planner should skip grain.
 
-**Setup:** `tools/bench_levels.py` (then `.sh`) unchanged (P2's data and queries, `build-bench/`, master -O2), 5 whole repeats, `SECS=5`. Summary by `tools/summarize_reps.py`; raw in `bench/A/rep1..5`.
+**Setup:** `tools/bench_levels.sh` unchanged (P2's data and queries, `build-bench/`, master -O2), 5 whole repeats (`REPEATS=5`), `SECS=5`. Summary by `tools/summarize_reps.py`; raw in `bench/A/rep1..5`.
 
 **Exactness:** 90 checks, 0 differ.
 
@@ -201,7 +201,7 @@ jb asked "How sure are we about our bechmark numbers, are ther othre tests we ca
 
 **Question:** do the marker rule, the sealer and the top-down reader equal a plain `GROUP BY` for any window, width and write mix? **Decides:** trust in the read logic before it is written in C.
 
-**How:** `tools/fuzz_read.sql`, run per seed by `tools/fuzz_read.py` (`--mutants` adds the planted bugs below), on `build-ra/` (asserts on). One SQL model of the index: W, summary rows per level, markers; a partial predicate `status = 'paid'`; levels 1 minute / 1 hour / 1 day; lag 1 minute. 10000 random operations per seed: new rows (55%), late rows anywhere in the past 3 days (10%, some with a value above all others, some NULL), refunds and un-refunds in and out of the predicate (10%), value changes (7%), moves in time by up to ±3 hours (6%), deletes (8%), seals (4%). About 300 reads per seed, spread over the run: windows aligned and not, widths minute, hour, day and total, many ending in the open tail. Each read compared row by row with `GROUP BY`. Not tested: concurrency (one session), the real executor callbacks.
+**How:** `tools/fuzz_read.sql`, run per seed by `tools/fuzz_read.sh` (`--mutants` adds the planted bugs below), on `build-ra/` (asserts on). One SQL model of the index: W, summary rows per level, markers; a partial predicate `status = 'paid'`; levels 1 minute / 1 hour / 1 day; lag 1 minute. 10000 random operations per seed: new rows (55%), late rows anywhere in the past 3 days (10%, some with a value above all others, some NULL), refunds and un-refunds in and out of the predicate (10%), value changes (7%), moves in time by up to ±3 hours (6%), deletes (8%), seals (4%). About 300 reads per seed, spread over the run: windows aligned and not, widths minute, hour, day and total, many ending in the open tail. Each read compared row by row with `GROUP BY`. Not tested: concurrency (one session), the real executor callbacks.
 
 **Does it catch bugs?** 9 copies, each with one planted bug, all caught on a small run (2000 rows, 2000 operations, 70 reads):
 
@@ -223,7 +223,7 @@ jb asked "How sure are we about our bechmark numbers, are ther othre tests we ca
 
 **Question:** is the patched server as fast as master on tables without an index that asks for the callback; and what does the callback cost when one does? **Decides:** whether the design email can say tables without grain pay nothing, and the callback's per-row price.
 
-**Setup:** `tools/bench_delete.py` (then `.sh`): master (`build-bench/`) and the patch (`build-bench-patch/`, same configure, -O2, no asserts), fresh clusters, shared_buffers 2GB, autovacuum off. Table of 1M rows `(id primary key, k indexed, v)`; on the patch also a copy with a `dummy_index_am` index on `v`, which asks for the callback. 5 rounds alternating the servers. Summary by `tools/summarize_reps.py`.
+**Setup:** `tools/bench_delete.sh`: master (`build-bench/`) and the patch (`build-bench-patch/`, same configure, -O2, no asserts), fresh clusters, shared_buffers 2GB, autovacuum off. Table of 1M rows `(id primary key, k indexed, v)`; on the patch also a copy with a `dummy_index_am` index on `v`, which asks for the callback. 5 rounds alternating the servers. Summary by `tools/summarize_reps.py`.
 
 | Workload | master, median ms | patch, median ms | patch vs master | patch, with callback index |
 |---|---|---|---|---|
@@ -234,7 +234,7 @@ jb asked "How sure are we about our bechmark numbers, are ther othre tests we ca
 
 **Surprised:** the rolled-back DELETE ran 407–424 ms in round 1 and 674–724 ms after, on both servers: each run must check the rows' aborted deletes, which hides the callback. So F2.
 
-**F2** (`tools/bench_delete.py --fresh`, then `bench_bulk_delete.sh`; `bench/F2/`): one committed DELETE of 1M rows on a freshly built table each time, 7 rounds.
+**F2** (`tools/bench_delete.sh --fresh`; `bench/F2/`): one committed DELETE of 1M rows on a freshly built table each time, 7 rounds.
 - Master's first 3 rounds were outliers (845.669, 1015.431, 880.740 ms); from round 4 on, master's median is 463.349 ms and the patch's 469.150 ms, +1.3%.
 - With the callback index, against the same round without: median +18.7% (min +10.6%, max +27.1%), a median of 87.5 ms per 1M rows, so about 87.5 ns per row.
 
@@ -253,3 +253,12 @@ jb: "I hate bash-scripts, they are cancer, is can we re-rewrite these script to 
 - Each starts its cluster if it isn't running and stops it after.
 - Checked on small inputs: the 9 planted bugs gave the same bad-read counts as before (61, 65, 61, 15, 65, 51, 46, 50, 13 of 70) and seed 0.42 the same totals; every exactness check 0 differ; both plots and both summaries run.
 - P1–P3's numbers above came from the bash versions.
+
+### Tools back to bash, readable, 2026-10-20
+
+jb: "Fuck it, we need to clean these benchmark scripts up, they are just a mess, lets go back to bash. But lets make sure to make it readbole, it was fucking dumbster fire"
+
+- The SQL left the scripts: each script's SQL is in its own directory of formatted, commented `.sql` files (`tools/read/`, `tools/levels/`, `tools/delete/`); `{{NAME}}` in them is filled from the script's shell variable `NAME`. The scripts only run things in order.
+- `tools/lib.sh` holds the shared parts: pick a cluster (`use`), start it and stop it on exit (`up`), `sql`, `render`, `timed` (warm-up, pgbench, plan), `same` (the exactness check). bash 3.2 (macOS) is enough.
+- `bench_read.sh` (P1), `bench_levels.sh` (P2, and A with `REPEATS=N`), `bench_delete.sh` (F, and F2 with `--fresh`; `bench_bulk_delete.sh` folded in), `fuzz_read.sh` (E; `SEEDS`, `--mutants`). The Python versions and `pg.py` are gone; `summarize_reps.py`, `plot_*.py` and `aggs.py` stay Python, as they do arithmetic.
+- Same queries (reformatted only), same CSV columns. Checked on small inputs: every exactness check 0 differ; the 9 planted bugs gave the same bad-read counts as before (61, 65, 61, 15, 65, 51, 46, 50, 13 of 70); F and F2 ran one round each.

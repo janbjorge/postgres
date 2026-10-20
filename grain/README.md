@@ -15,4 +15,4 @@ Exact time-bucket aggregates (`count`, `sum`, `min`, `max` per minute, hour or d
 - [SPEC.md](SPEC.md): the starting spec, word for word.
 - [docs/done.md](docs/done.md): finished requests.
 - [AGENTS.md](AGENTS.md): rules for agents.
-- [tools/](tools/README.md): uv scripts for the benchmarks and checks (`bench_read.py`, `bench_levels.py`, `bench_delete.py`, `fuzz_read.py`, `summarize_reps.py`, `plot_*.py`; NOTES.md P1–P3), `vm_lsn_test.sql` (NOTES.md M0.1) and `aggs.py` (NOTES.md M0.3).
+- [tools/](tools/README.md): the benchmarks and checks, bash with their SQL in `.sql` files (`bench_read.sh`, `bench_levels.sh`, `bench_delete.sh`, `fuzz_read.sh`; NOTES.md P1–P3), Python for the arithmetic (`summarize_reps.py`, `plot_*.py`, `aggs.py`), and `vm_lsn_test.sql` (NOTES.md M0.1).

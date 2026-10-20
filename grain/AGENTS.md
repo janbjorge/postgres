@@ -16,7 +16,7 @@
 - **Correctness first.** Before any code that lets a read skip rows, its proof sketch and race table entry go in DESIGN.md §4 and §5. A missed write is a silently wrong answer, never just a slow one.
 - **NOTES.md** gets a dated entry per step: what was built, measured, surprised. Before a measurement, say what question it answers and what decision depends on it.
 - **Numbers:** never do arithmetic, conversions or aggregation in your head. Run `/usr/bin/python3 -I -c '...'`; plain `python3` is a shim that fails here. State only numbers that a command printed.
-- **Tools are uv scripts, never bash** (jb 2026-10-20: "I hate bash-scripts, they are cancer"): `#!/usr/bin/env -S uv run --script` with a PEP 723 block; shared code in `tools/pg.py`.
+- **Tools: readable bash, SQL in `.sql` files** (jb 2026-10-20: "lets go back to bash. But lets make sure to make it readbole"): scripts only run things in order; every query or setup step is a formatted, commented `.sql` file, filled by `render` from `tools/lib.sh`; shared code in `tools/lib.sh`. Arithmetic (medians, plots) stays in uv Python scripts.
 - **Search:** `rg` and `rg --files`, never grep, find or ls. Use LSP for symbols when it is available.
 - **Build and cluster** (NOTES.md M0):
   - the autoconf VPATH build is `build-ra/`, installed to `build-ra/inst`;
