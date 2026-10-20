@@ -1,0 +1,66 @@
+== seed 0.11, 20000 rows
+ reads | rows_differ | bad_reads | buckets_checked | reads_with_markers | max_markers | summary_rows_used | reads_all_scanned 
+   294 |           0 |         0 |           15125 |                273 |          92 |             83107 |                 0
+  width   | reads | differ 
+ 00:01:00 |    72 |      0
+ 01:00:00 |    73 |      0
+ 1 day    |    60 |      0
+ total    |    89 |      0
+(4 rows)
+ rows_now | summary_rows 
+    25709 |         4739
+== seed 0.22, 20000 rows
+ reads | rows_differ | bad_reads | buckets_checked | reads_with_markers | max_markers | summary_rows_used | reads_all_scanned 
+   321 |           0 |         0 |           13320 |                297 |          69 |             85412 |                 1
+  width   | reads | differ 
+ 00:01:00 |    68 |      0
+ 01:00:00 |    86 |      0
+ 1 day    |    88 |      0
+ total    |    79 |      0
+(4 rows)
+ rows_now | summary_rows 
+    25708 |         4736
+== seed 0.33, 20000 rows
+ reads | rows_differ | bad_reads | buckets_checked | reads_with_markers | max_markers | summary_rows_used | reads_all_scanned 
+   303 |           0 |         0 |           15114 |                276 |          85 |             80623 |                 1
+  width   | reads | differ 
+ 00:01:00 |    78 |      0
+ 01:00:00 |    70 |      0
+ 1 day    |    73 |      0
+ total    |    82 |      0
+(4 rows)
+ rows_now | summary_rows 
+    25726 |         4741
+== seed 0.44, 20000 rows
+ reads | rows_differ | bad_reads | buckets_checked | reads_with_markers | max_markers | summary_rows_used | reads_all_scanned 
+   308 |           0 |         0 |           14926 |                280 |          87 |             89166 |                 2
+  width   | reads | differ 
+ 00:01:00 |    74 |      0
+ 01:00:00 |    87 |      0
+ 1 day    |    76 |      0
+ total    |    71 |      0
+(4 rows)
+ rows_now | summary_rows 
+    25702 |         4737
+== seed 0.55, 20000 rows
+ reads | rows_differ | bad_reads | buckets_checked | reads_with_markers | max_markers | summary_rows_used | reads_all_scanned 
+   313 |           0 |         0 |           17573 |                296 |         102 |             86883 |                 0
+  width   | reads | differ 
+ 00:01:00 |    82 |      0
+ 01:00:00 |    70 |      0
+ 1 day    |    85 |      0
+ total    |    76 |      0
+(4 rows)
+ rows_now | summary_rows 
+    25596 |         4736
+== seed 0.66, 1000000 rows
+ reads | rows_differ | bad_reads | buckets_checked | reads_with_markers | max_markers | summary_rows_used | reads_all_scanned 
+   308 |           0 |         0 |           14568 |                282 |          75 |             89259 |                 2
+  width   | reads | differ 
+ 00:01:00 |    74 |      0
+ 01:00:00 |    82 |      0
+ 1 day    |    68 |      0
+ total    |    84 |      0
+(4 rows)
+ rows_now | summary_rows 
+  1005725 |         4736

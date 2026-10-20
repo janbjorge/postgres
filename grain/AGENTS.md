@@ -1,4 +1,4 @@
-# Rules for agents working on rangeagg
+# Rules for agents working on grain
 
 - **Read DESIGN.md first:** it is the target. Then RESEARCH.md for the facts it rests on. Keep them true; if the code and a file disagree, check the code and fix the file.
   - Build only what DESIGN.md says, in the milestone order of its §7.
@@ -16,23 +16,24 @@
 - **Correctness first.** Before any code that lets a read skip rows, its proof sketch and race table entry go in DESIGN.md §4 and §5. A missed write is a silently wrong answer, never just a slow one.
 - **NOTES.md** gets a dated entry per step: what was built, measured, surprised. Before a measurement, say what question it answers and what decision depends on it.
 - **Numbers:** never do arithmetic, conversions or aggregation in your head. Run `/usr/bin/python3 -I -c '...'`; plain `python3` is a shim that fails here. State only numbers that a command printed.
+- **Tools are uv scripts, never bash** (jb 2026-10-20: "I hate bash-scripts, they are cancer"): `#!/usr/bin/env -S uv run --script` with a PEP 723 block; shared code in `tools/pg.py`.
 - **Search:** `rg` and `rg --files`, never grep, find or ls. Use LSP for symbols when it is available.
 - **Build and cluster** (NOTES.md M0):
   - the autoconf VPATH build is `build-ra/`, installed to `build-ra/inst`;
   - the test cluster is `build-ra/data`, port 54329, socket in `build-ra/`, superuser `janbjorge`;
   - stop the cluster after use.
-- **In core, not an extension** (jb 2026-10-19). Code goes in `src/backend/access/rangeagg/` and the catalogs, never in `contrib/`.
+- **In core, not an extension** (jb 2026-10-19). Code goes in `src/backend/access/grain/` and the catalogs, never in `contrib/`.
 - **Write it as it will be submitted, from the first line** (jb 2026-10-19: "so we make sure we do not have todo loads of double work"; the rules are RESEARCH.md §9.7):
   - the adjacent code's style; pgindent; `git diff --check`; no `#ifdef` switch; comments say why;
   - OIDs from one random start in 8000–9999;
   - a `Makefile` and a `meson.build` in each new directory;
   - SGML docs with examples, and regress tests, in the same commit as the code they cover;
   - commits shaped as the patch series of DESIGN.md §7: each one builds and passes its tests alone.
-- **The `rangeagg/` folder is our notes, never part of a patch.** Docs commits and code commits stay separate, so `git format-patch` can skip the docs.
-- **Tests:** only the tests that cover the change: the `rangeagg` regress test and isolation specs, or a single named core test. Never `check-world` or a whole core suite.
+- **The `grain/` folder is our notes, never part of a patch.** Docs commits and code commits stay separate, so `git format-patch` can skip the docs.
+- **Tests:** only the tests that cover the change: the `grain` regress test and isolation specs, or a single named core test. Never `check-world` or a whole core suite.
 - **Web:** ask jb before any web search or fetch (org rules).
 - **Git:**
-  - work on `rangeagg-proto`;
+  - work on `grain-proto`;
   - commit only when jb says "commit", once per commit;
   - never push without asking;
   - no AI attribution in commits.

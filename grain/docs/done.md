@@ -4,10 +4,17 @@ Finished requests from jb, newest first. Each quotes the request and says what c
 
 ## 2026-10-19
 
+- [x] **"that sounds really good, lets do orders."** The example is now orders and revenue, with a partial index on paid orders, refunds as updates and backfills as late writes (DESIGN.md §1, §3.1, §3.5, M3). The downloads case stays as history in §1.
+- [x] **"sounds good, lets foruc on the syntax for now."** The syntax is settled in DESIGN.md §3.1: the time key then group keys, `INCLUDE` for values, `buckets` levels, optional `lag`, and partial indexes. Group keys are built in M3.5.
+- [x] **"lets try grain for now"**: the index is `grain`, Grouped Range Aggregate INdex (DESIGN.md §2). How we got there:
+  - first candidates: `binagg`, `tally`, `rangeagg` (too close to `range_agg()`), and not `rollup` (a keyword, `kwlist.h:394`);
+  - jb on `binagg`: "slight better, but it reads odd to me? bin is pretty overloaded? Are there any good acromyms? Liek with btree etc";
+  - the core AMs are acronyms: GiST, GIN, SP-GiST, BRIN (`doc/src/sgml/brin.sgml:15` and siblings). So `grain`, or `rain` (Range Aggregate INdex).
+  - The notes folder and the branch followed later: `grain/` and `grain-proto`.
 - [x] **"Also, lets read up on https://wiki.postgresql.org/wiki/Submitting_a_Patch so we make sure we do not have todo loads of double work"**:
   - the rules are in RESEARCH.md §9.7, and their consequences in AGENTS.md;
   - DESIGN.md §7 now starts with a design email (M0.5) and splits M1 into patches 0001 and 0002.
-- [x] **"4, sure"**, to committing the docs: committed on `rangeagg-proto`.
+- [x] **"4, sure"**, to committing the docs: committed on `grain-proto`.
 - [x] **"3, Unsure about these bencharmsk, lets, try a few order of magnitude, like 1k, 100k, 1M, 10M, meybe 100M?"** DESIGN.md §7, M3.
 - [x] **"2, Yes, drop it, i feel that partitions has to meny wierd quarks and details."** Route 1 dropped (ALTERNATIVES.md §3).
 - [x] **"The goal here is NOT yet another postgres extension, i want this new index tobe part of postgres"**, which also answered whether a core patch is acceptable. DESIGN.md is now a built-in index AM (§2, §6). Being in core changed the state (§3.2):

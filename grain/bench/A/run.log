@@ -1,0 +1,396 @@
+### rep 1
+== 1000 rows
+  hourly30d b0_seq: 0.086 ms (57971 runs)
+  daily30d b0_seq: 0.072 ms (69324 runs)
+  total365d b0_seq: 0.078 ms (64479 runs)
+  hourly30d b0_tuned: 0.091 ms (54719 runs)
+  daily30d b0_tuned: 0.073 ms (68557 runs)
+  total365d b0_tuned: 0.077 ms (65176 runs)
+  hourly30d b0_covering: 0.076 ms (66156 runs)
+  daily30d b0_covering: 0.062 ms (80596 runs)
+  total365d b0_covering: 0.082 ms (60818 runs)
+  hourly30d b1_brin: 0.088 ms (56760 runs)
+  daily30d b1_brin: 0.075 ms (67068 runs)
+  total365d b1_brin: 0.079 ms (63184 runs)
+  check hourly30d clean: 75 buckets, 0 differ
+  hourly30d grain_clean: 0.944 ms (5296 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.348 ms (14366 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.549 ms (9114 runs)
+  check hourly30d dirty5: 80 buckets, 0 differ
+  hourly30d grain_dirty5: 1.346 ms (3720 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.719 ms (6967 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.094 ms (4577 runs)
+  sizes heap|levels: 80 kB|29 MB
+== 100000 rows
+  hourly30d b0_seq: 2.769 ms (1806 runs)
+  daily30d b0_seq: 2.550 ms (1963 runs)
+  total365d b0_seq: 4.254 ms (1177 runs)
+  hourly30d b0_tuned: 2.764 ms (1813 runs)
+  daily30d b0_tuned: 2.562 ms (1954 runs)
+  total365d b0_tuned: 4.250 ms (1179 runs)
+  hourly30d b0_covering: 1.053 ms (4755 runs)
+  daily30d b0_covering: 0.834 ms (6006 runs)
+  total365d b0_covering: 4.253 ms (1176 runs)
+  hourly30d b1_brin: 1.783 ms (2807 runs)
+  daily30d b1_brin: 1.555 ms (3221 runs)
+  total365d b1_brin: 4.273 ms (1172 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.175 ms (4260 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.348 ms (14374 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.549 ms (9125 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 1.568 ms (3191 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.719 ms (6965 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.085 ms (4614 runs)
+  sizes heap|levels: 4360 kB|30 MB
+== 1000000 rows
+  hourly30d b0_seq: 18.832 ms (266 runs)
+  daily30d b0_seq: 18.523 ms (271 runs)
+  total365d b0_seq: 18.864 ms (266 runs)
+  hourly30d b0_tuned: 18.836 ms (266 runs)
+  daily30d b0_tuned: 18.448 ms (272 runs)
+  total365d b0_tuned: 18.832 ms (266 runs)
+  hourly30d b0_covering: 12.294 ms (407 runs)
+  daily30d b0_covering: 12.172 ms (412 runs)
+  total365d b0_covering: 18.903 ms (265 runs)
+  hourly30d b1_brin: 13.189 ms (380 runs)
+  daily30d b1_brin: 12.929 ms (388 runs)
+  total365d b1_brin: 21.731 ms (231 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.187 ms (4219 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.351 ms (14272 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.551 ms (9096 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 1.583 ms (3164 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.732 ms (6834 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.099 ms (4550 runs)
+  sizes heap|levels: 42 MB|34 MB
+### rep 2
+== 1000 rows
+  hourly30d b0_seq: 0.086 ms (58235 runs)
+  daily30d b0_seq: 0.073 ms (68558 runs)
+  total365d b0_seq: 0.078 ms (64573 runs)
+  hourly30d b0_tuned: 0.086 ms (58166 runs)
+  daily30d b0_tuned: 0.073 ms (68321 runs)
+  total365d b0_tuned: 0.077 ms (64820 runs)
+  hourly30d b0_covering: 0.075 ms (66496 runs)
+  daily30d b0_covering: 0.063 ms (80010 runs)
+  total365d b0_covering: 0.083 ms (60253 runs)
+  hourly30d b1_brin: 0.088 ms (56767 runs)
+  daily30d b1_brin: 0.074 ms (67601 runs)
+  total365d b1_brin: 0.079 ms (63415 runs)
+  check hourly30d clean: 75 buckets, 0 differ
+  hourly30d grain_clean: 0.953 ms (5258 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.344 ms (14541 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.556 ms (8998 runs)
+  check hourly30d dirty5: 80 buckets, 0 differ
+  hourly30d grain_dirty5: 1.337 ms (3747 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.722 ms (6935 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.085 ms (4615 runs)
+  sizes heap|levels: 80 kB|29 MB
+== 100000 rows
+  hourly30d b0_seq: 2.795 ms (1791 runs)
+  daily30d b0_seq: 2.557 ms (1958 runs)
+  total365d b0_seq: 4.254 ms (1178 runs)
+  hourly30d b0_tuned: 2.794 ms (1790 runs)
+  daily30d b0_tuned: 2.550 ms (1964 runs)
+  total365d b0_tuned: 4.267 ms (1174 runs)
+  hourly30d b0_covering: 1.053 ms (4757 runs)
+  daily30d b0_covering: 0.833 ms (6012 runs)
+  total365d b0_covering: 4.262 ms (1175 runs)
+  hourly30d b1_brin: 1.774 ms (2822 runs)
+  daily30d b1_brin: 1.562 ms (3205 runs)
+  total365d b1_brin: 4.263 ms (1174 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.197 ms (4183 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.345 ms (14538 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.547 ms (9154 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 1.577 ms (3176 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.723 ms (6926 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.102 ms (4536 runs)
+  sizes heap|levels: 4360 kB|30 MB
+== 1000000 rows
+  hourly30d b0_seq: 18.721 ms (268 runs)
+  daily30d b0_seq: 18.505 ms (271 runs)
+  total365d b0_seq: 18.865 ms (266 runs)
+  hourly30d b0_tuned: 18.817 ms (267 runs)
+  daily30d b0_tuned: 18.453 ms (272 runs)
+  total365d b0_tuned: 18.851 ms (266 runs)
+  hourly30d b0_covering: 12.211 ms (410 runs)
+  daily30d b0_covering: 12.141 ms (413 runs)
+  total365d b0_covering: 18.913 ms (265 runs)
+  hourly30d b1_brin: 13.132 ms (382 runs)
+  daily30d b1_brin: 13.060 ms (384 runs)
+  total365d b1_brin: 21.728 ms (231 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.187 ms (4219 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.350 ms (14304 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.549 ms (9115 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 1.601 ms (3128 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.729 ms (6870 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.103 ms (4543 runs)
+  sizes heap|levels: 42 MB|34 MB
+### rep 3
+== 1000 rows
+  hourly30d b0_seq: 0.086 ms (58210 runs)
+  daily30d b0_seq: 0.073 ms (68423 runs)
+  total365d b0_seq: 0.077 ms (64922 runs)
+  hourly30d b0_tuned: 0.086 ms (58008 runs)
+  daily30d b0_tuned: 0.074 ms (67925 runs)
+  total365d b0_tuned: 0.077 ms (64845 runs)
+  hourly30d b0_covering: 0.076 ms (66098 runs)
+  daily30d b0_covering: 0.062 ms (81126 runs)
+  total365d b0_covering: 0.083 ms (60206 runs)
+  hourly30d b1_brin: 0.088 ms (56974 runs)
+  daily30d b1_brin: 0.074 ms (67273 runs)
+  total365d b1_brin: 0.080 ms (62947 runs)
+  check hourly30d clean: 75 buckets, 0 differ
+  hourly30d grain_clean: 0.946 ms (5297 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.349 ms (14336 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.552 ms (9065 runs)
+  check hourly30d dirty5: 80 buckets, 0 differ
+  hourly30d grain_dirty5: 1.336 ms (3749 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.719 ms (6953 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.088 ms (4597 runs)
+  sizes heap|levels: 80 kB|29 MB
+== 100000 rows
+  hourly30d b0_seq: 2.781 ms (1801 runs)
+  daily30d b0_seq: 2.556 ms (1958 runs)
+  total365d b0_seq: 4.278 ms (1171 runs)
+  hourly30d b0_tuned: 2.771 ms (1807 runs)
+  daily30d b0_tuned: 2.555 ms (1960 runs)
+  total365d b0_tuned: 4.286 ms (1167 runs)
+  hourly30d b0_covering: 1.050 ms (4768 runs)
+  daily30d b0_covering: 0.840 ms (5961 runs)
+  total365d b0_covering: 4.253 ms (1178 runs)
+  hourly30d b1_brin: 1.789 ms (2795 runs)
+  daily30d b1_brin: 1.554 ms (3218 runs)
+  total365d b1_brin: 4.258 ms (1176 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.174 ms (4265 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.340 ms (14690 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.543 ms (9227 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 1.557 ms (3212 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.722 ms (6940 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.078 ms (4644 runs)
+  sizes heap|levels: 4360 kB|30 MB
+== 1000000 rows
+  hourly30d b0_seq: 18.759 ms (267 runs)
+  daily30d b0_seq: 18.398 ms (273 runs)
+  total365d b0_seq: 18.942 ms (265 runs)
+  hourly30d b0_tuned: 18.808 ms (267 runs)
+  daily30d b0_tuned: 18.504 ms (271 runs)
+  total365d b0_tuned: 19.004 ms (264 runs)
+  hourly30d b0_covering: 12.244 ms (409 runs)
+  daily30d b0_covering: 12.188 ms (411 runs)
+  total365d b0_covering: 18.936 ms (265 runs)
+  hourly30d b1_brin: 13.108 ms (382 runs)
+  daily30d b1_brin: 12.998 ms (386 runs)
+  total365d b1_brin: 21.799 ms (230 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.192 ms (4201 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.349 ms (14347 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.556 ms (9014 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 1.578 ms (3173 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.733 ms (6836 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.093 ms (4583 runs)
+  sizes heap|levels: 42 MB|34 MB
+### rep 4
+== 1000 rows
+  hourly30d b0_seq: 0.086 ms (57907 runs)
+  daily30d b0_seq: 0.073 ms (68681 runs)
+  total365d b0_seq: 0.077 ms (65009 runs)
+  hourly30d b0_tuned: 0.087 ms (57496 runs)
+  daily30d b0_tuned: 0.073 ms (68507 runs)
+  total365d b0_tuned: 0.078 ms (64559 runs)
+  hourly30d b0_covering: 0.075 ms (66341 runs)
+  daily30d b0_covering: 0.062 ms (81107 runs)
+  total365d b0_covering: 0.083 ms (60029 runs)
+  hourly30d b1_brin: 0.088 ms (56889 runs)
+  daily30d b1_brin: 0.075 ms (66683 runs)
+  total365d b1_brin: 0.079 ms (63437 runs)
+  check hourly30d clean: 75 buckets, 0 differ
+  hourly30d grain_clean: 0.960 ms (5205 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.344 ms (14546 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.550 ms (9107 runs)
+  check hourly30d dirty5: 80 buckets, 0 differ
+  hourly30d grain_dirty5: 1.337 ms (3746 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 0.718 ms (6976 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.100 ms (4550 runs)
+  sizes heap|levels: 80 kB|29 MB
+== 100000 rows
+  hourly30d b0_seq: 2.782 ms (1800 runs)
+  daily30d b0_seq: 2.560 ms (1956 runs)
+  total365d b0_seq: 4.263 ms (1174 runs)
+  hourly30d b0_tuned: 2.785 ms (1798 runs)
+  daily30d b0_tuned: 2.556 ms (1959 runs)
+  total365d b0_tuned: 4.256 ms (1177 runs)
+  hourly30d b0_covering: 1.057 ms (4736 runs)
+  daily30d b0_covering: 0.834 ms (5993 runs)
+  total365d b0_covering: 4.266 ms (1175 runs)
+  hourly30d b1_brin: 1.778 ms (2816 runs)
+  daily30d b1_brin: 1.555 ms (3220 runs)
+  total365d b1_brin: 4.272 ms (1173 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.181 ms (4240 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.347 ms (14403 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.548 ms (9139 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 2.226 ms (2248 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 1.020 ms (4904 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.644 ms (3041 runs)
+  sizes heap|levels: 4360 kB|30 MB
+== 1000000 rows
+  hourly30d b0_seq: 25.265 ms (198 runs)
+  daily30d b0_seq: 24.630 ms (203 runs)
+  total365d b0_seq: 25.683 ms (195 runs)
+  hourly30d b0_tuned: 25.188 ms (199 runs)
+  daily30d b0_tuned: 24.586 ms (204 runs)
+  total365d b0_tuned: 25.471 ms (197 runs)
+  hourly30d b0_covering: 17.863 ms (280 runs)
+  daily30d b0_covering: 17.229 ms (291 runs)
+  total365d b0_covering: 25.671 ms (195 runs)
+  hourly30d b1_brin: 18.520 ms (270 runs)
+  daily30d b1_brin: 18.357 ms (273 runs)
+  total365d b1_brin: 29.244 ms (172 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.685 ms (2969 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.493 ms (10144 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.785 ms (6369 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 2.224 ms (2248 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 1.031 ms (4851 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.560 ms (3206 runs)
+  sizes heap|levels: 42 MB|34 MB
+### rep 5
+== 1000 rows
+  hourly30d b0_seq: 0.122 ms (41111 runs)
+  daily30d b0_seq: 0.098 ms (51002 runs)
+  total365d b0_seq: 0.099 ms (50337 runs)
+  hourly30d b0_tuned: 0.132 ms (37829 runs)
+  daily30d b0_tuned: 0.105 ms (47769 runs)
+  total365d b0_tuned: 0.103 ms (48671 runs)
+  hourly30d b0_covering: 0.104 ms (47857 runs)
+  daily30d b0_covering: 0.083 ms (60311 runs)
+  total365d b0_covering: 0.107 ms (46673 runs)
+  hourly30d b1_brin: 0.122 ms (41114 runs)
+  daily30d b1_brin: 0.100 ms (49786 runs)
+  total365d b1_brin: 0.104 ms (48190 runs)
+  check hourly30d clean: 75 buckets, 0 differ
+  hourly30d grain_clean: 1.350 ms (3706 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.497 ms (10049 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.773 ms (6471 runs)
+  check hourly30d dirty5: 80 buckets, 0 differ
+  hourly30d grain_dirty5: 1.886 ms (2652 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 1.026 ms (4876 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.528 ms (3272 runs)
+  sizes heap|levels: 80 kB|29 MB
+== 100000 rows
+  hourly30d b0_seq: 3.903 ms (1282 runs)
+  daily30d b0_seq: 3.592 ms (1393 runs)
+  total365d b0_seq: 5.992 ms (835 runs)
+  hourly30d b0_tuned: 3.888 ms (1287 runs)
+  daily30d b0_tuned: 3.607 ms (1387 runs)
+  total365d b0_tuned: 5.999 ms (834 runs)
+  hourly30d b0_covering: 1.462 ms (3421 runs)
+  daily30d b0_covering: 1.173 ms (4261 runs)
+  total365d b0_covering: 6.029 ms (830 runs)
+  hourly30d b1_brin: 2.517 ms (1988 runs)
+  daily30d b1_brin: 2.206 ms (2266 runs)
+  total365d b1_brin: 6.035 ms (829 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.685 ms (2970 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.488 ms (10238 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.761 ms (6578 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 2.230 ms (2242 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 1.038 ms (4818 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.589 ms (3149 runs)
+  sizes heap|levels: 4360 kB|30 MB
+== 1000000 rows
+  hourly30d b0_seq: 25.274 ms (198 runs)
+  daily30d b0_seq: 24.692 ms (203 runs)
+  total365d b0_seq: 25.742 ms (195 runs)
+  hourly30d b0_tuned: 24.864 ms (202 runs)
+  daily30d b0_tuned: 24.349 ms (206 runs)
+  total365d b0_tuned: 25.163 ms (199 runs)
+  hourly30d b0_covering: 17.189 ms (291 runs)
+  daily30d b0_covering: 17.124 ms (292 runs)
+  total365d b0_covering: 25.888 ms (194 runs)
+  hourly30d b1_brin: 18.368 ms (273 runs)
+  daily30d b1_brin: 18.680 ms (268 runs)
+  total365d b1_brin: 29.549 ms (170 runs)
+  check hourly30d clean: 721 buckets, 0 differ
+  hourly30d grain_clean: 1.702 ms (2937 runs)
+  check daily30d clean: 31 buckets, 0 differ
+  daily30d grain_clean: 0.498 ms (10032 runs)
+  check total365d clean: 1 buckets, 0 differ
+  total365d grain_clean: 0.792 ms (6313 runs)
+  check hourly30d dirty5: 721 buckets, 0 differ
+  hourly30d grain_dirty5: 2.309 ms (2167 runs)
+  check daily30d dirty5: 31 buckets, 0 differ
+  daily30d grain_dirty5: 1.046 ms (4782 runs)
+  check total365d dirty5: 1 buckets, 0 differ
+  total365d grain_dirty5: 1.573 ms (3178 runs)
+  sizes heap|levels: 42 MB|34 MB
+exit 0

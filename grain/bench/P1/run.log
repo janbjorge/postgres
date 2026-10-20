@@ -1,0 +1,56 @@
+== 1000 rows
+  b0_seq: 0.254 ms (39401 runs) Seq Scan on downloads_1000
+  b0_tuned: 0.251 ms (39813 runs) Seq Scan on downloads_1000
+  b0_btree: 0.259 ms (38558 runs) Seq Scan on downloads_1000
+  b0_covering: 0.242 ms (41392 runs) Index Only Scan using downloads_1000_cov on downloads_1000
+  b1_brin: 0.253 ms (39533 runs) Seq Scan on downloads_1000
+  check clean: 333 buckets, 0 differ
+  grain_clean: 0.545 ms (18351 runs) Bitmap Heap Scan on downloads_1000_summary;Bitmap Index Scan on downloads_1000_summary_pkey;Index Scan using downloads_1000_bt on downloads_1000;Seq Scan on downloads_1000_dirty
+  check dirty5: 335 buckets, 0 differ
+  grain_dirty5: 0.395 ms (25325 runs) Bitmap Heap Scan on downloads_1000_summary;Bitmap Index Scan on downloads_1000_summary_pkey;Index Scan using downloads_1000_bt on downloads_1000;Seq Scan on downloads_1000_dirty
+  sizes heap|summary: 80 kB|152 kB
+== 100000 rows
+  b0_seq: 6.954 ms (1438 runs) Seq Scan on downloads_100000
+  b0_tuned: 6.951 ms (1439 runs) Seq Scan on downloads_100000
+  b0_btree: 5.700 ms (1755 runs) Index Scan using downloads_100000_bt on downloads_100000
+  b0_covering: 5.127 ms (1951 runs) Index Only Scan using downloads_100000_cov on downloads_100000
+  b1_brin: 6.428 ms (1556 runs) Bitmap Heap Scan on downloads_100000;Bitmap Index Scan on downloads_100000_brin
+  check clean: 721 buckets, 0 differ
+  grain_clean: 0.916 ms (10915 runs) Bitmap Heap Scan on downloads_100000_summary;Bitmap Index Scan on downloads_100000_summary_pkey;Index Scan using downloads_100000_bt on downloads_100000;Seq Scan on downloads_100000_dirty
+  check dirty5: 721 buckets, 0 differ
+  grain_dirty5: 0.615 ms (16257 runs) Bitmap Heap Scan on downloads_100000_summary;Bitmap Index Scan on downloads_100000_summary_pkey;Index Scan using downloads_100000_bt on downloads_100000;Seq Scan on downloads_100000_dirty
+  sizes heap|summary: 4360 kB|160 kB
+== 1000000 rows
+  b0_seq: 94.409 ms (106 runs) Seq Scan on downloads_1000000
+  b0_tuned: 69.446 ms (145 runs) Seq Scan on downloads_1000000
+  b0_btree: 81.614 ms (123 runs) Index Scan using downloads_1000000_bt on downloads_1000000
+  b0_covering: 74.564 ms (135 runs) Index Only Scan using downloads_1000000_cov on downloads_1000000
+  b1_brin: 80.171 ms (125 runs) Bitmap Heap Scan on downloads_1000000;Bitmap Index Scan on downloads_1000000_brin
+  check clean: 721 buckets, 0 differ
+  grain_clean: 1.109 ms (9016 runs) Bitmap Heap Scan on downloads_1000000_summary;Bitmap Index Scan on downloads_1000000_summary_pkey;Index Scan using downloads_1000000_bt on downloads_1000000;Seq Scan on downloads_1000000_dirty
+  check dirty5: 721 buckets, 0 differ
+  grain_dirty5: 1.063 ms (9414 runs) Bitmap Heap Scan on downloads_1000000_summary;Bitmap Index Scan on downloads_1000000_summary_pkey;Index Scan using downloads_1000000_bt on downloads_1000000;Seq Scan on downloads_1000000_dirty
+  sizes heap|summary: 42 MB|160 kB
+== 10000000 rows
+  b0_seq: 768.559 ms (14 runs) Parallel Seq Scan on downloads_10000000
+  b0_tuned: 543.894 ms (19 runs) Parallel Seq Scan on downloads_10000000
+  b0_btree: 1072.002 ms (10 runs) Index Scan using downloads_10000000_bt on downloads_10000000
+  b0_covering: 952.531 ms (11 runs) Index Only Scan using downloads_10000000_cov on downloads_10000000
+  b1_brin: 1010.648 ms (10 runs) Bitmap Heap Scan on downloads_10000000;Bitmap Index Scan on downloads_10000000_brin
+  check clean: 721 buckets, 0 differ
+  grain_clean: 2.924 ms (3421 runs) Bitmap Heap Scan on downloads_10000000_summary;Bitmap Index Scan on downloads_10000000_summary_pkey;Index Scan using downloads_10000000_bt on downloads_10000000;Seq Scan on downloads_10000000_dirty
+  check dirty5: 721 buckets, 0 differ
+  grain_dirty5: 5.317 ms (1882 runs) Bitmap Heap Scan on downloads_10000000_summary;Bitmap Index Scan on downloads_10000000_summary_pkey;Index Scan using downloads_10000000_bt on downloads_10000000;Seq Scan on downloads_10000000_dirty
+  sizes heap|summary: 422 MB|160 kB
+== 100000000 rows
+  b0_seq: 9626.876 ms (2 runs) Parallel Seq Scan on downloads_100000000
+  b0_tuned: 6861.001 ms (2 runs) Parallel Seq Scan on downloads_100000000
+  b0_btree: 12408.968 ms (1 runs) Index Scan using downloads_100000000_bt on downloads_100000000
+  b0_covering: 6846.602 ms (2 runs) Index Only Scan using downloads_100000000_cov on downloads_100000000
+  b1_brin: 6752.206 ms (2 runs) Bitmap Heap Scan on downloads_100000000;Bitmap Index Scan on downloads_100000000_brin
+  check clean: 721 buckets, 0 differ
+  grain_clean: 27.970 ms (358 runs) Bitmap Heap Scan on downloads_100000000_summary;Bitmap Index Scan on downloads_100000000_summary_pkey;Index Scan using downloads_100000000_bt on downloads_100000000;Seq Scan on downloads_100000000_dirty
+  check dirty5: 721 buckets, 0 differ
+  grain_dirty5: 55.634 ms (180 runs) Bitmap Heap Scan on downloads_100000000_summary;Bitmap Index Scan on downloads_100000000_summary_pkey;Index Scan using downloads_100000000_bt on downloads_100000000;Seq Scan on downloads_100000000_dirty
+  sizes heap|summary: 4224 MB|160 kB
+exit 0

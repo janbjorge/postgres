@@ -81,6 +81,26 @@ Facts the design rests on. Each one lives here once; other files link to its sec
 
 - **R Logical-replication apply deletes through `simple_table_tuple_delete`** (`execReplication.c:1038`), not `ExecDelete`, and fires the after-row triggers itself (`:1041`). So a delete hook placed only in `ExecDelete` would miss replicated deletes.
 
+### 6.1 Every path that deletes or updates a user row (2026-10-19)
+
+- **R** Outside heapam, rows are deleted or updated through `table_tuple_delete`/`table_tuple_update` at six sites:
+  - **The executor:** `nodeModifyTable.c:1532` (`ExecDeleteAct`) and `:2338` (`ExecUpdateAct`).
+  - **Logical-replication apply:** `execReplication.c:972` (update) and `:1038` (delete).
+  - **REPACK CONCURRENTLY,** replaying concurrent changes onto the new copy: `repack.c:2922` (update, then `ExecInsertIndexTuples`) and `:2960` (delete, with no index call).
+  - Catalog and TOAST paths (`indexing.c:322-367`, `toast_internals.c:513`) are refused by DESIGN.md §5 anyway.
+- **R Every executor caller ends in one of two epilogues:**
+  - `ExecDeleteEpilogue` (`:1549`), called by `ExecDelete` (`:1855`) and MERGE's delete (`:3496`);
+  - `ExecUpdateEpilogue` (`:2357`), called by `ExecUpdate` (`:2749`) and MERGE's update (`:3460`). It already calls `ExecInsertIndexTuples` when `updateIndexes != TU_None` (`:2366-2374`).
+  - A move between partitions deletes through `ExecDelete` (`:2031`); ON CONFLICT DO UPDATE goes through `ExecUpdate` (`:2992`).
+  - So the callback belongs in the two epilogues plus the two `execReplication.c` sites.
+- **R `TU_UpdateIndexes`** (`tableam.h:133-143`):
+  - `TU_None`: no indexed column changed and the TID is the same;
+  - `TU_All`: a non-summarizing indexed column changed, or the TID changed;
+  - `TU_Summarizing`: only summarized columns changed.
+  - So the callback fires when the result is not `TU_None`, the same test that drives `aminsert` on update.
+- **R Fetching the old row:** the executor already does it with `table_tuple_fetch_row_version(rel, tid, SnapshotAny, slot)` (`nodeModifyTable.c:422`, and 8 more sites). Reshke's caution about table AMs other than heap applies (§9.1).
+- **I REPACK CONCURRENTLY's deletes are harmless:** the new copy's index is freshly built, and `ambuild` starts with nothing sealed and W at its minimum. With no sealed buckets there is nothing to keep clean.
+
 ## 7. The table AM
 
 - **R** `GetHeapamTableAmRoutine` is exported (`tableam.h:2163`).
@@ -262,6 +282,15 @@ Read 2026-10-19 (jb: "lets read up on https://wiki.postgresql.org/wiki/Submittin
     - unrelated changes can get a patch rejected.
   - **License.** Posting gives the PostgreSQL Global Development Group the right to distribute it under the PostgreSQL license.
   - **Linked, not read:** [Creating Clean Patches](https://wiki.postgresql.org/wiki/Creating_Clean_Patches), [Reviewing a Patch](https://wiki.postgresql.org/wiki/Reviewing_a_Patch), [Regression test authoring](https://wiki.postgresql.org/wiki/Regression_test_authoring), [Developer FAQ](https://wiki.postgresql.org/wiki/Developer_FAQ), [CommitFest](https://wiki.postgresql.org/wiki/CommitFest), [Working with Git](https://wiki.postgresql.org/wiki/Working_with_Git).
+- **R BRIN began as a design email with no code:** "[RFC] Minmax indexes", Alvaro Herrera, 2013-06-14 ([mail](https://www.postgresql.org/message-id/20130614222805.GZ5491@eldon.alvh.no-ip.org)).
+  - Opening: "here's a document explaining what they are and how they work, so that reviewers can poke holes to have the design improved. My intention is to have a patch to show for CF2".
+  - Sections: motivation; the idea, with other systems' versions; grammar (`USING MINMAX`); AM design; heap insert, update and delete; summarization (who and when); vacuum; optimizer; open questions; references. About 150 lines.
+  - Then:
+    - a follow-up in 2013-07 reworked the design after implementation ([mail](https://www.postgresql.org/message-id/20130719053957.GD4139@eldon.alvh.no-ip.org));
+    - v7 timings in 2013-11 ([mail](https://www.postgresql.org/message-id/1b33314e37c1f9e5b7cfb1f44664af7e.squirrel@webmail.xs4all.nl));
+    - renamed BRIN at v18 in 2014-09 ([mail](https://www.postgresql.org/message-id/7a6866a385c787c35c13ea3740b609ad.squirrel@webmail.xs4all.nl)).
+  - U: shipped in 9.5.
+- **R The other outcome:** IVM's first mail, design plus a proof of concept (§9.1), is still not committed in 2026.
 - **R In this tree:**
   - **OIDs** for a patch not committed soon: a consecutive group from a random start in 8000–9999; renumbered after commit with `renumber_oids.pl` (`doc/src/sgml/bki.sgml:410-424`).
   - **Build files.** A backend directory carries both a `Makefile` and a `meson.build`, as BRIN's does. Meson isn't installed here (NOTES.md M0), so meson files can't be checked locally.
@@ -272,9 +301,9 @@ Read 2026-10-19 (jb: "lets read up on https://wiki.postgresql.org/wiki/Submittin
 
 - [ ] Does `amvacuumcleanup` still run when VACUUM bypasses index vacuuming (INDEX_CLEANUP AUTO)? It matters only for the parked visibility-map routes.
 - [ ] Do a primary and a standby carry the same VM page LSN for the same state? Does pg_upgrade keep LSNs rising? Both are parked routes too.
-- [ ] Which executor paths delete or update a row: ExecDelete, ExecUpdate, MERGE's actions, ON CONFLICT DO UPDATE, cross-partition moves, `execReplication.c`. For DESIGN.md §6.
-- [ ] Which update result (`TU_UpdateIndexes`) means indexed columns changed, for HOT and for summarizing AMs. For DESIGN.md §6.
-- [ ] Must an index AM have `amgettuple` or `amgetbitmap`? `rangeagg` scans nothing.
+- [x] Which executor paths delete or update a row. Answered in §6.1.
+- [x] Which update result (`TU_UpdateIndexes`) means indexed columns changed. Answered in §6.1.
+- [ ] Must an index AM have `amgettuple` or `amgetbitmap`? `grain` scans nothing.
 - [x] Is `ALTER INDEX ... SET (custom option)` taken at the option's own lock level for a custom AM? Yes, read (§3, custom reloptions); not tested. Moot for W, now in the metapage.
 - [ ] How core can own hidden heaps per index: creation as in `toasting.c:129`, the namespace, how the index finds them, pg_dump and pg_upgrade. For DESIGN.md §6.
 - [ ] Does `WaitForLockers` skip the caller's own locks, and how does autovacuum's work-item loop (`AutoVacuumRequestWork`, `autovacuum.h:66`) run a multi-step job? For DESIGN.md §3.3.
