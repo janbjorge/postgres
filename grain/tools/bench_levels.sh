@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# P2 and A: levels (NOTES.md P2, P3). Plain SQL, no grain code.
+# The read path with minute, hour and day levels, simulated in plain SQL;
+# there is no grain code.
 #
 # Question: with minute, hour and day levels and a 1-minute lag, how much
 # faster than a plain GROUP BY are (1) hourly over 30 days, (2) daily over
@@ -9,7 +10,7 @@
 # Usage: bench_levels.sh OUTDIR SIZE...
 #   Cluster: build-bench, port 54330; started and stopped if it isn't running.
 #   SECS: seconds per timed variant (default 10).
-#   REPEATS: run everything this many times, into OUTDIR/repK (NOTES.md P3, A).
+#   REPEATS: run everything this many times, into OUTDIR/repK.
 #   SQL: levels/*.sql.
 
 source "$(dirname "$0")/lib.sh"

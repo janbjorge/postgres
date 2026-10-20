@@ -5,8 +5,8 @@
 # ///
 """Median and spread over repeated benchmark runs.
 
-A: summarize_reps.py levels CSV...   (bench_levels.py results, one per repeat)
-F: summarize_reps.py delete CSV      (bench_delete.py results)
+summarize_reps.py levels CSV...   (bench_levels.sh results, one per repeat)
+summarize_reps.py delete CSV      (bench_delete.sh results)
 """
 
 import csv

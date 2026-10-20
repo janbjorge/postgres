@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# P1: the read ceiling (NOTES.md P1). Plain SQL, no grain code.
+# The read path with one level of hour summaries, simulated in plain SQL;
+# there is no grain code.
 #
 # Question: how much faster is a 30-day hourly count/sum/min/max when
 # answered the way grain would (summary rows for sealed hours, a scan of

@@ -10,8 +10,9 @@ set -euo pipefail
 TOOLS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 ROOT=$(cd "$TOOLS/../.." && pwd)
 SECS=${SECS:-10}
+DBUSER=$(whoami)
 
-# The settings every benchmark cluster runs with (NOTES.md P1).
+# The settings every benchmark cluster runs with.
 BENCH_SETTINGS="-c shared_buffers=2GB -c autovacuum=off -c timezone=UTC"
 
 die() { echo "$*" >&2; exit 1; }
@@ -25,7 +26,7 @@ use() {
 	PORT=$2
 	DATA=$BUILD/${3:-data}
 	BIN=$BUILD/inst/bin
-	export PGHOST=$BUILD PGPORT=$PORT PGDATABASE=postgres PGUSER=janbjorge
+	export PGHOST=$BUILD PGPORT=$PORT PGDATABASE=postgres PGUSER=$DBUSER
 	export PGOPTIONS="-c client_min_messages=warning"
 }
 
@@ -35,7 +36,7 @@ use() {
 STARTED=""
 up() {
 	"$BIN/pg_ctl" -D "$DATA" status >/dev/null 2>&1 && return
-	[ -d "$DATA" ] || "$BIN/initdb" -D "$DATA" -U janbjorge --no-sync >/dev/null
+	[ -d "$DATA" ] || "$BIN/initdb" -D "$DATA" -U "$DBUSER" --no-sync >/dev/null
 	"$BIN/pg_ctl" -D "$DATA" -l "$BUILD/server-$(basename "$DATA").log" -w start \
 		-o "-p $PORT -k $BUILD -c listen_addresses='' $*" >/dev/null
 	STARTED="$STARTED $DATA"

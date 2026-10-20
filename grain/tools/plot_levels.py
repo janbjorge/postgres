@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["matplotlib"]
 # ///
-"""P2 chart and table from bench_levels.py's results.csv (NOTES.md P2).
+"""Chart and table from bench_levels.sh's results.csv.
 
 Usage: plot_levels.py RESULTS_CSV OUT_PNG
 """

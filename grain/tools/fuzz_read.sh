@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# E: run fuzz_read.sql over several seeds, and check that it catches planted
-# bugs (NOTES.md P3).
+# Run fuzz_read.sql over several seeds, and check that it catches planted
+# bugs.
 #
 # fuzz_read.sql models grain's writer, sealer and reader rules in SQL and
 # compares every read with a plain GROUP BY; its header says what it
@@ -9,7 +9,7 @@
 # finds a difference.
 #
 # Usage: fuzz_read.sh OUTDIR [--mutants]
-#   Cluster: build-ra (asserts on), port 54329; started and stopped if it isn't running.
+#   Cluster: build-bench, port 54330; started and stopped if it isn't running.
 #   SEEDS: "SEED:ROWS ..." (default below). OPS, READS: per seed (default 10000, 300).
 
 source "$(dirname "$0")/lib.sh"
@@ -49,7 +49,7 @@ mutant() {
 	[ "$bad_reads" -gt 0 ] || MISSED="$MISSED; $1"
 }
 
-use build-ra 54329
+use build-bench 54330
 export PGOPTIONS="-c client_min_messages=error"
 up
 mkdir -p "$OUT"

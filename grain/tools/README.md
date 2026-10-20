@@ -6,8 +6,8 @@ Benchmarks and checks for grain. The scripts are bash and only run things in ord
 
 | Build | What | Cluster | Used by |
 |---|---|---|---|
-| `build-ra/` | master + patch, asserts on, `-O1` | `data`, port 54329 | `fuzz_read.sh` |
-| `build-bench/` | master, `-O2`, no asserts | `data`, port 54330; `data-f`, port 54330 | `bench_read.sh`, `bench_levels.sh`; `bench_delete.sh` (master side) |
+| `build-ra/` | master + patch, asserts on, `-O1` | `data`, port 54329 | the patch's regression tests |
+| `build-bench/` | master, `-O2`, no asserts | `data`, port 54330; `data-f`, port 54330 | `bench_read.sh`, `bench_levels.sh`, `fuzz_read.sh`; `bench_delete.sh` (master side) |
 | `build-bench-patch/` | master + patch, `-O2`, no asserts | `data-f`, port 54331 | `bench_delete.sh` (patch side) |
 
 Configure lines are in NOTES.md M0 and P3. Benchmark clusters run with `shared_buffers=2GB`, `autovacuum=off`, `timezone=UTC`. Every script starts the cluster it needs if it isn't running, and stops it on exit; a cluster you started yourself is left running.

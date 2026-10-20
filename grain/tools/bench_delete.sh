@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
-# F and F2: what the delete callback (patch 0001) costs DELETE and UPDATE
-# (NOTES.md P3).
+# What the delete callback (amnotifydelete) costs DELETE and UPDATE.
 #
 # Question: (1) on a table with no index that asks for the callback, is the
 # patched server as fast as master? (2) With one index that asks for it
 # (dummy_index_am), what does fetching the old row and calling the index
-# cost per row? Decides: whether "tables without such an index pay nothing"
-# can be claimed, and what the callback adds for grain.
+# cost per row?
 #
 # master is build-bench (port 54330), the patch is build-bench-patch (port
 # 54331); both -O2 without asserts, same settings, own clusters in data-f.
 # Rounds alternate between the two so drift hits both.
 #
-# F (default): four pgbench workloads on a 1M-row table. The bulk ones roll
+# Default: four pgbench workloads on a 1M-row table. The bulk ones roll
 # back and repeat on the same table, so later runs also pay for checking
 # the aborted deletes.
-# F2 (--fresh): one committed DELETE of 1M rows on a freshly built table
+# --fresh: one committed DELETE of 1M rows on a freshly built table
 # each time, which shows the callback's per-row price.
 #
 # Usage: bench_delete.sh OUTDIR ROUNDS [--fresh]
