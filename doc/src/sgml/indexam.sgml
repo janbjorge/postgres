@@ -154,6 +154,7 @@ typedef struct IndexAmRoutine
     ambuildempty_function ambuildempty;
     aminsert_function aminsert;
     aminsertcleanup_function aminsertcleanup;   /* can be NULL */
+    amnotifydelete_function amnotifydelete;     /* can be NULL */
     ambulkdelete_function ambulkdelete;
     amvacuumcleanup_function amvacuumcleanup;
     amcanreturn_function amcanreturn;   /* can be NULL */
@@ -399,6 +400,38 @@ aminsertcleanup (Relation indexRelation,
    <literal>indexInfo-&gt;ii_AmCache</literal>. This is useful if the data
    requires additional cleanup steps (e.g., releasing pinned buffers), and
    simply releasing the memory is not sufficient.
+  </para>
+
+  <para>
+<programlisting>
+void
+amnotifydelete (Relation indexRelation,
+                Datum *values,
+                bool *isnull,
+                ItemPointer heap_tid,
+                Relation heapRelation,
+                IndexInfo *indexInfo);
+</programlisting>
+   Tell the index that a table tuple was deleted, or replaced by a new
+   version, by the current transaction.  <literal>values</literal> and
+   <literal>isnull</literal> are the index column values of the old tuple
+   version, and <literal>heap_tid</literal> is its TID.  The call is made
+   after the deletion, for <command>DELETE</command>, for the delete action
+   of <command>MERGE</command>, for a row moved to another partition, and
+   when logical replication applies a delete.  For an update it is made
+   whenever <function>aminsert</function> is called for the new version, with
+   the same rule for summarizing indexes.  Partial indexes are called only
+   for old versions that satisfied the predicate.
+  </para>
+
+  <para>
+   Most index access methods don't need this: dead index entries are found
+   and removed by <command>VACUUM</command>, through
+   <function>ambulkdelete</function>.  It is for access methods that keep
+   values derived from the indexed columns, and must stay correct for every
+   snapshot as soon as the deleting transaction commits.  The callback can
+   be NULL; when no index on a table provides it, deletes and updates on
+   that table do no extra work.
   </para>
 
   <para>

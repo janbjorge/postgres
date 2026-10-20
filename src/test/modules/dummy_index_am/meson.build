@@ -28,6 +28,7 @@ tests += {
   'regress': {
     'sql': [
       'reloptions',
+      'notify_delete',
     ],
   },
 }

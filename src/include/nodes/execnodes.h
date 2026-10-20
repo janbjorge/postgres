@@ -503,6 +503,15 @@ typedef struct ResultRelInfo
 	IndexInfo **ri_IndexRelationInfo;
 
 	/*
+	 * For ExecNotifyIndexesOfDelete: whether the relcache was asked yet,
+	 * whether any index wants amnotifydelete calls, and a slot for the old
+	 * tuple version
+	 */
+	bool		ri_DeleteNotifyChecked;
+	bool		ri_DeleteNotify;
+	TupleTableSlot *ri_DeleteNotifySlot;
+
+	/*
 	 * For UPDATE/DELETE/MERGE result relations, the attribute number of the
 	 * row identity junk attribute in the source plan's output tuples
 	 */
