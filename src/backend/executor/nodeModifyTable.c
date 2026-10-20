@@ -1553,6 +1553,11 @@ ExecDeleteEpilogue(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
 	EState	   *estate = context->estate;
 	TransitionCaptureState *ar_delete_trig_tcs;
 
+	/* Tell the indexes that want to hear of deletes */
+	if (ItemPointerIsValid(tupleid) &&
+		resultRelInfo->ri_RelationDesc->rd_rel->relhasindex)
+		ExecNotifyIndexesOfDelete(resultRelInfo, estate, tupleid, NULL, false);
+
 	/*
 	 * If this delete is the result of a partition key update that moved the
 	 * tuple to a new partition, put this row into the transition OLD TABLE,
@@ -2368,6 +2373,9 @@ ExecUpdateEpilogue(ModifyTableContext *context, UpdateContext *updateCxt,
 
 		if (updateCxt->updateIndexes == TU_Summarizing)
 			flags |= EIIT_ONLY_SUMMARIZING;
+		ExecNotifyIndexesOfDelete(resultRelInfo, context->estate, tupleid,
+								  NULL,
+								  updateCxt->updateIndexes == TU_Summarizing);
 		recheckIndexes = ExecInsertIndexTuples(resultRelInfo, context->estate,
 											   flags, slot, NIL,
 											   NULL);

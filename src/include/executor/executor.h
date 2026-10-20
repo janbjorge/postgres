@@ -760,6 +760,10 @@ extern List *ExecInsertIndexTuples(ResultRelInfo *resultRelInfo, EState *estate,
 								   uint32 flags, TupleTableSlot *slot,
 								   List *arbiterIndexes,
 								   bool *specConflict);
+extern void ExecNotifyIndexesOfDelete(ResultRelInfo *resultRelInfo,
+									  EState *estate, ItemPointer tupleid,
+									  TupleTableSlot *oldslot,
+									  bool onlySummarizing);
 extern bool ExecCheckIndexConstraints(ResultRelInfo *resultRelInfo,
 									  TupleTableSlot *slot,
 									  EState *estate, ItemPointer conflictTid,
