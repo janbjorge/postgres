@@ -33,6 +33,7 @@
 #include "catalog/pg_type.h"
 #include "nodes/nodeFuncs.h"
 #include "optimizer/clauses.h"
+#include "optimizer/cost.h"
 #include "optimizer/optimizer.h"
 #include "optimizer/pathnode.h"
 #include "optimizer/planmain.h"
@@ -113,9 +114,17 @@ grain_key_bound(Expr *clause, Var *key, Oid opfamily, Expr **bound,
 	if (!equal(left, key) || !OidIsValid(opno) ||
 		!op_in_opfamily(opno, opfamily) ||
 		exprType(right) != TIMESTAMPTZOID ||
-		contain_var_clause(right) || contain_volatile_functions(right) ||
-		contain_subplans(right))
+		!is_pseudo_constant_clause(right) || contain_subplans(right))
 		return false;
+
+	/* grain keeps no bucket for an infinite time key */
+	if (IsA(right, Const) && !((Const *) right)->constisnull)
+	{
+		TimestampTz ts = DatumGetTimestampTz(((Const *) right)->constvalue);
+
+		if (TIMESTAMP_NOT_FINITE(ts))
+			return false;
+	}
 
 	get_op_opfamily_properties(opno, opfamily, false, &strategy,
 							   &lefttype, &righttype);
@@ -202,7 +211,16 @@ add_grain_agg_paths(PlannerInfo *root, RelOptInfo *input_rel,
 	bool		upperinclusive = false;
 	List	   *otherquals = NIL;
 	Oid			opfamily;
+	double		numGroups;
+	bool		found = false;
 	ListCell   *lc;
+
+	/*
+	 * Off means off, not just costly: grain's own range queries, which group
+	 * by date_bin() too, rely on it to group rows rather than read the index.
+	 */
+	if (!enable_grainagg)
+		return;
 
 	/* One plain table, grouped by a single date_bin() call */
 	if (input_rel->reloptkind != RELOPT_BASEREL ||
@@ -229,6 +247,17 @@ add_grain_agg_paths(PlannerInfo *root, RelOptInfo *input_rel,
 		!IsA(key, Var) || key->varno != input_rel->relid ||
 		key->varlevelsup != 0 ||
 		!IsA(origin, Const) || origin->constisnull)
+		return;
+
+	foreach(lc, input_rel->indexlist)
+	{
+		IndexOptInfo *index = lfirst_node(IndexOptInfo, lc);
+
+		if (index->relam == GRAIN_AM_OID &&
+			index->indexkeys[0] == key->varattno)
+			found = true;
+	}
+	if (!found)
 		return;
 
 	/* WHERE: one bound on each side of the key, and the rest */
@@ -263,6 +292,9 @@ add_grain_agg_paths(PlannerInfo *root, RelOptInfo *input_rel,
 	if (lower == NULL || upper == NULL)
 		return;
 
+	numGroups = estimate_num_groups(root, list_make1(groupexpr),
+									input_rel->rows, NULL, NULL);
+
 	foreach(lc, input_rel->indexlist)
 	{
 		IndexOptInfo *index = lfirst_node(IndexOptInfo, lc);
@@ -273,7 +305,6 @@ add_grain_agg_paths(PlannerInfo *root, RelOptInfo *input_rel,
 		bool		ok;
 		int64		usecs;
 		TimestampTz watermark;
-		double		numGroups;
 
 		if (index->relam != GRAIN_AM_OID ||
 			index->indexkeys[0] != key->varattno)
@@ -301,15 +332,12 @@ add_grain_agg_paths(PlannerInfo *root, RelOptInfo *input_rel,
 		ok = grain_index_width(irel, DatumGetIntervalP(width->constvalue),
 							   DatumGetTimestampTz(origin->constvalue),
 							   &usecs);
-		watermark = grain_read_watermark(irel);
+		if (ok)
+			watermark = grain_read_watermark(irel);
 		index_close(irel, NoLock);
 		if (!ok)
 			continue;
 
-		numGroups = estimate_num_groups(root,
-										list_make1(groupexpr),
-										input_rel->rows,
-										NULL, NULL);
 		add_path(grouped_rel, (Path *)
 				 create_grainagg_path(root, grouped_rel, input_rel,
 									  index->indexoid, usecs,

@@ -1069,10 +1069,7 @@ grain_read(Relation heap, Relation index, Snapshot snapshot, int64 width,
 	Assert(!TIMESTAMP_NOT_FINITE(lower) && !TIMESTAMP_NOT_FINITE(upper));
 
 	spec = &grain_get_cache(index)->spec;
-	rs.outlevel = -1;
-	for (int l = 0; l < spec->nlevels; l++)
-		if (spec->width[l] == width)
-			rs.outlevel = l;
+	rs.outlevel = grain_spec_level(spec, width);
 	if (rs.outlevel < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),

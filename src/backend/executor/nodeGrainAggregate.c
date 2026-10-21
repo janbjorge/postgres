@@ -43,18 +43,19 @@ grain_agg_emit(void *arg, const GrainAgg *agg)
 	GrainAggregateState *node = (GrainAggregateState *) arg;
 	TupleDesc	tupdesc = node->ss.ss_ScanTupleSlot->tts_tupleDescriptor;
 
-	for (int i = 0; i < tupdesc->natts; i++)
+	/* The date_bin() call comes first, then the Aggrefs */
+	node->values[0] = TimestampTzGetDatum(agg->bucket);
+	node->nulls[0] = false;
+	for (int i = 1; i < tupdesc->natts; i++)
 	{
 		int			v = node->colvalue[i];
+		Oid			type = TupleDescAttr(tupdesc, i)->atttypid;
 		bool		empty = v >= 0 && agg->nn[v] == 0;
 		int64		minmax;
 
 		node->nulls[i] = false;
 		switch ((GrainColumn) node->colkind[i])
 		{
-			case GRAIN_COLUMN_BUCKET:
-				node->values[i] = TimestampTzGetDatum(agg->bucket);
-				break;
 			case GRAIN_COLUMN_COUNT_STAR:
 				node->values[i] = Int64GetDatum(agg->n);
 				break;
@@ -66,7 +67,7 @@ grain_agg_emit(void *arg, const GrainAgg *agg)
 				node->nulls[i] = empty;
 				if (empty)
 					break;
-				if (node->coltype[i] == NUMERICOID)
+				if (type == NUMERICOID)
 					node->values[i] = agg->sum[v];
 				else
 					node->values[i] = DirectFunctionCall1(numeric_int8,
@@ -80,9 +81,9 @@ grain_agg_emit(void *arg, const GrainAgg *agg)
 				minmax = node->colkind[i] == GRAIN_COLUMN_MIN ?
 					agg->min[v] : agg->max[v];
 				/* The value has the column's type, so it fits */
-				if (node->coltype[i] == INT2OID)
+				if (type == INT2OID)
 					node->values[i] = Int16GetDatum((int16) minmax);
-				else if (node->coltype[i] == INT4OID)
+				else if (type == INT4OID)
 					node->values[i] = Int32GetDatum((int32) minmax);
 				else
 					node->values[i] = Int64GetDatum(minmax);
@@ -95,13 +96,13 @@ grain_agg_emit(void *arg, const GrainAgg *agg)
 }
 
 /*
- * Evaluate one bound of the time key, as the first key value inside the
- * window for the lower bound and the first one past it for the upper.
- * Returns false if the bound is NULL, which no row satisfies.
+ * Evaluate one bound of the time key.  The reader takes [lower, upper), so
+ * an exclusive lower or inclusive upper bound is bumped: time keys are whole
+ * microseconds.  Returns false if the bound is NULL, which no row satisfies.
  */
 static bool
-grain_agg_bound(GrainAggregateState *node, ExprState *expr, bool inclusive,
-				bool upper, TimestampTz *result)
+grain_agg_bound(GrainAggregateState *node, ExprState *expr, bool bump,
+				TimestampTz *result)
 {
 	ExprContext *econtext = node->ss.ps.ps_ExprContext;
 	bool		isnull;
@@ -123,11 +124,7 @@ grain_agg_bound(GrainAggregateState *node, ExprState *expr, bool inclusive,
 						RelationGetRelationName(node->index)),
 				 errhint("Set enable_grainagg to off to group the table's rows instead.")));
 
-	/*
-	 * The reader takes [lower, upper).  Time keys are whole microseconds, so
-	 * an exclusive lower or inclusive upper bound moves up by one.
-	 */
-	if (inclusive == upper)
+	if (bump)
 		ts++;
 	*result = ts;
 	return true;
@@ -140,10 +137,8 @@ grain_agg_read(GrainAggregateState *node)
 	TimestampTz lower;
 	TimestampTz upper;
 
-	if (!grain_agg_bound(node, node->lower, plan->lowerinclusive, false,
-						 &lower) ||
-		!grain_agg_bound(node, node->upper, plan->upperinclusive, true,
-						 &upper))
+	if (!grain_agg_bound(node, node->lower, !plan->lowerinclusive, &lower) ||
+		!grain_agg_bound(node, node->upper, plan->upperinclusive, &upper))
 		return;
 
 	grain_read(node->ss.ss_currentRelation, node->index,
@@ -192,7 +187,6 @@ ExecInitGrainAggregate(GrainAggregate *node, EState *estate, int eflags)
 	int			nvalues;
 	int			natts;
 	ListCell   *lc;
-	int			i = 0;
 
 	/* check for unsupported flags */
 	Assert(!(eflags & (EXEC_FLAG_BACKWARD | EXEC_FLAG_MARK)));
@@ -225,25 +219,19 @@ ExecInitGrainAggregate(GrainAggregate *node, EState *estate, int eflags)
 	natts = list_length(node->grain_scan_tlist);
 	state->colkind = palloc_array(int, natts);
 	state->colvalue = palloc_array(int, natts);
-	state->coltype = palloc_array(Oid, natts);
 	state->values = palloc_array(Datum, natts);
 	state->nulls = palloc_array(bool, natts);
-	foreach(lc, node->grain_scan_tlist)
+	for_each_from(lc, node->grain_scan_tlist, 1)
 	{
-		Expr	   *expr = ((TargetEntry *) lfirst(lc))->expr;
+		Aggref	   *aggref = castNode(Aggref,
+									  ((TargetEntry *) lfirst(lc))->expr);
+		int			i = foreach_current_index(lc);
 
-		state->coltype[i] = exprType((Node *) expr);
-		state->colvalue[i] = -1;
-		if (IsA(expr, Aggref))
-			state->colkind[i] = grain_aggref_column((Aggref *) expr,
-													valuecols, nvalues,
-													&state->colvalue[i]);
-		else
-			state->colkind[i] = GRAIN_COLUMN_BUCKET;
+		state->colkind[i] = grain_aggref_column(aggref, valuecols, nvalues,
+												&state->colvalue[i]);
 		if (state->colkind[i] == GRAIN_COLUMN_NONE)
 			elog(ERROR, "aggregate not kept by grain index \"%s\"",
 				 RelationGetRelationName(state->index));
-		i++;
 	}
 
 	state->buckets = tuplestore_begin_heap(false, false, work_mem);
@@ -261,7 +249,12 @@ ExecEndGrainAggregate(GrainAggregateState *node)
 void
 ExecReScanGrainAggregate(GrainAggregateState *node)
 {
-	/* The bounds may depend on parameters, so read again */
-	tuplestore_clear(node->buckets);
-	node->read = false;
+	/* Read again only if a parameter, as in the bounds, changed */
+	if (node->ss.ps.chgParam == NULL)
+		tuplestore_rescan(node->buckets);
+	else
+	{
+		tuplestore_clear(node->buckets);
+		node->read = false;
+	}
 }

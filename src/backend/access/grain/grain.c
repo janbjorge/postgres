@@ -58,6 +58,18 @@ typedef struct GrainInsertState
 } GrainInsertState;
 
 /*
+ * A finite interval without months in microseconds, or false if it has
+ * months or doesn't fit.
+ */
+static bool
+grain_interval_usecs_ok(const Interval *itv, int64 *usecs)
+{
+	return !INTERVAL_NOT_FINITE(itv) && itv->month == 0 &&
+		!pg_mul_s64_overflow((int64) itv->day, USECS_PER_DAY, usecs) &&
+		!pg_add_s64_overflow(*usecs, itv->time, usecs);
+}
+
+/*
  * An interval in microseconds.  Months and years are refused, as date_bin()
  * refuses them.  "what" names the interval in error messages.
  */
@@ -74,12 +86,23 @@ grain_interval_usecs(const Interval *itv, const char *what)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("%s cannot contain months or years", what)));
-	if (pg_mul_s64_overflow((int64) itv->day, USECS_PER_DAY, &usecs) ||
-		pg_add_s64_overflow(usecs, itv->time, &usecs))
+	if (!grain_interval_usecs_ok(itv, &usecs))
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERVAL_FIELD_OVERFLOW),
 				 errmsg("%s is out of range", what)));
 	return usecs;
+}
+
+/* The level of the given width in microseconds, or -1 if none has it */
+int
+grain_spec_level(const GrainSpec *spec, int64 width)
+{
+	for (int l = 0; l < spec->nlevels; l++)
+	{
+		if (spec->width[l] == width)
+			return l;
+	}
+	return -1;
 }
 
 /*
@@ -493,21 +516,11 @@ grain_index_width(Relation index, const Interval *width, TimestampTz origin,
 	GrainSpec  *spec = &grain_get_cache(index)->spec;
 	int64		w;
 
-	if (INTERVAL_NOT_FINITE(width) || width->month != 0 ||
-		TIMESTAMP_NOT_FINITE(origin) ||
-		pg_mul_s64_overflow((int64) width->day, USECS_PER_DAY, &w) ||
-		pg_add_s64_overflow(w, width->time, &w))
+	if (TIMESTAMP_NOT_FINITE(origin) || !grain_interval_usecs_ok(width, &w) ||
+		grain_spec_level(spec, w) < 0 || (origin - spec->origin) % w != 0)
 		return false;
-
-	for (int l = 0; l < spec->nlevels; l++)
-	{
-		if (spec->width[l] == w && (origin - spec->origin) % w == 0)
-		{
-			*usecs = w;
-			return true;
-		}
-	}
-	return false;
+	*usecs = w;
+	return true;
 }
 
 /*

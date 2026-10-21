@@ -2494,8 +2494,6 @@ create_grainagg_plan(PlannerInfo *root, GrainAggregatePath *best_path)
 
 	plan->plan.targetlist = build_path_tlist(root, &best_path->path);
 	plan->plan.qual = order_qual_clauses(root, best_path->quals);
-	plan->plan.lefttree = NULL;
-	plan->plan.righttree = NULL;
 	plan->heaprelid = best_path->heaprelid;
 	plan->indexid = best_path->indexid;
 	plan->width = best_path->width;

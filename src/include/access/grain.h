@@ -59,7 +59,6 @@ typedef struct GrainAgg
 typedef enum GrainColumn
 {
 	GRAIN_COLUMN_NONE,			/* not one grain keeps */
-	GRAIN_COLUMN_BUCKET,		/* the date_bin() call, not an aggregate */
 	GRAIN_COLUMN_COUNT_STAR,
 	GRAIN_COLUMN_COUNT,
 	GRAIN_COLUMN_SUM,

@@ -2492,9 +2492,8 @@ typedef struct GrainAggregateState
 	Relation	index;
 	ExprState  *lower;
 	ExprState  *upper;
-	int		   *colkind;		/* GrainColumn of each scan tuple column */
-	int		   *colvalue;		/* its value column, for an aggregate */
-	Oid		   *coltype;		/* its type */
+	int		   *colkind;		/* GrainColumn of each Aggref column */
+	int		   *colvalue;		/* its value column */
 	Datum	   *values;			/* workspace for one scan tuple */
 	bool	   *nulls;
 	Tuplestorestate *buckets;

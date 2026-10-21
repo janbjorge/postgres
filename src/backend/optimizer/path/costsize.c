@@ -3259,7 +3259,6 @@ cost_grainagg(Path *path, PlannerInfo *root, RelOptInfo *heaprel,
 	run_cost = numGroups * (cpu_tuple_cost + qual_cost.per_tuple);
 
 	path->rows = numGroups;
-	path->disabled_nodes = enable_grainagg ? 0 : 1;
 	path->startup_cost = startup_cost;
 	path->total_cost = startup_cost + run_cost;
 }

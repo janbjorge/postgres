@@ -143,6 +143,28 @@ SELECT what, grain_agg_differ(q) AS differ
 FROM grain_agg_queries ORDER BY what;
 ROLLBACK;
 
+-- Rescanned with unchanged bounds, the buckets read once are returned again
+SET enable_material = off;
+SET enable_hashjoin = off;
+SET enable_mergejoin = off;
+EXPLAIN (COSTS OFF)
+SELECT v.x, g.*
+FROM (VALUES (1), (2)) v(x) LEFT JOIN
+     (SELECT date_bin('1 hour', created_at, '2000-01-01'), count(*)
+      FROM grain_agg_orders
+      WHERE status = 'paid' AND created_at >= '2020-01-01'
+        AND created_at < '2020-01-01 03:00' GROUP BY 1) g ON true;
+SELECT grain_agg_differ($$
+SELECT v.x, g.*
+FROM (VALUES (1), (2)) v(x) LEFT JOIN
+     (SELECT date_bin('1 hour', created_at, '2000-01-01'), count(*)
+      FROM grain_agg_orders
+      WHERE status = 'paid' AND created_at >= '2020-01-01'
+        AND created_at < '2020-01-01 03:00' GROUP BY 1) g ON true$$) AS differ;
+RESET enable_material;
+RESET enable_hashjoin;
+RESET enable_mergejoin;
+
 -- What the index can't answer
 SELECT what, grain_agg_used(q) AS used FROM (VALUES
 ('another qual',

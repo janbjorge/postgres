@@ -146,7 +146,7 @@ static void show_scan_io_usage(ScanState *planstate,
 static void show_instrumentation_count(const char *qlabel, int which,
 									   PlanState *planstate, ExplainState *es);
 static void show_foreignscan_info(ForeignScanState *fsstate, ExplainState *es);
-static void show_grainagg_info(GrainAggregateState *gstate, List *ancestors,
+static void show_grainagg_info(GrainAggregate *plan, List *ancestors,
 							   ExplainState *es);
 static const char *explain_get_index_name(Oid indexId);
 static bool peek_buffer_usage(ExplainState *es, const BufferUsage *usage);
@@ -2180,8 +2180,7 @@ ExplainNode(PlanState *planstate, List *ancestors,
 			show_foreignscan_info((ForeignScanState *) planstate, es);
 			break;
 		case T_GrainAggregate:
-			show_grainagg_info((GrainAggregateState *) planstate,
-							   ancestors, es);
+			show_grainagg_info((GrainAggregate *) plan, ancestors, es);
 			show_upper_qual(plan->qual, "Filter", planstate, ancestors, es);
 			if (plan->qual)
 				show_instrumentation_count("Rows Removed by Filter", 1,
@@ -4635,10 +4634,8 @@ ExplainIndexScanDetails(Oid indexid, ScanDirection indexorderdir,
  * Show the bucket width and the window of the time key a GrainAggregate reads.
  */
 static void
-show_grainagg_info(GrainAggregateState *gstate, List *ancestors,
-				   ExplainState *es)
+show_grainagg_info(GrainAggregate *plan, List *ancestors, ExplainState *es)
 {
-	GrainAggregate *plan = (GrainAggregate *) gstate->ss.ps.plan;
 	Interval	width = {0};
 	char	   *widthstr;
 	List	   *context;

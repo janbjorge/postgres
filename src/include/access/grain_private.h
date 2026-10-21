@@ -106,6 +106,7 @@ typedef struct GrainCache
 /* grain.c */
 extern int64 grain_options_delay(Relation index, int64 finest);
 extern int64 grain_interval_usecs(const Interval *itv, const char *what);
+extern int	grain_spec_level(const GrainSpec *spec, int64 width);
 extern TimestampTz grain_bin(TimestampTz ts, int64 width, TimestampTz origin);
 
 /* grain_state.c */
