@@ -164,6 +164,7 @@ bool		enable_parallel_append = true;
 bool		enable_parallel_hash = true;
 bool		enable_partition_pruning = true;
 bool		enable_presorted_aggregate = true;
+bool		enable_grainagg = true;
 bool		enable_async_append = true;
 
 typedef struct
@@ -3223,6 +3224,44 @@ get_windowclause_startup_tuples(PlannerInfo *root, WindowClause *wc,
 	 */
 
 	return clamp_row_est(return_tuples);
+}
+
+/*
+ * cost_grainagg
+ *		Determines and returns the cost of computing a grouping from a grain
+ *		index.
+ *
+ * The index read descends the summary table's btree and reads a summary row
+ * per bucket.  Rows that no summary covers, the fraction 'tailfrac' of those
+ * the query groups, it aggregates through a query on the table, which we
+ * price as that fraction of the cheapest way to read them.  Preparing that
+ * query is charged as a fixed startup cost, about what planning a small
+ * query costs.  Buckets marked as changed since their summary are not known
+ * when planning, so they are not counted.
+ */
+void
+cost_grainagg(Path *path, PlannerInfo *root, RelOptInfo *heaprel,
+			  int naggs, List *quals, double numGroups, double tailfrac)
+{
+	QualCost	qual_cost;
+	double		tailrows = heaprel->rows * tailfrac;
+	Cost		startup_cost;
+	Cost		run_cost;
+
+	startup_cost = 10000 * cpu_operator_cost;
+	startup_cost += random_page_cost + numGroups * cpu_tuple_cost;
+	startup_cost += tailfrac * heaprel->cheapest_total_path->total_cost +
+		tailrows * cpu_operator_cost * (naggs + 1);
+
+	/* Then the buckets are returned, with HAVING applied */
+	cost_qual_eval(&qual_cost, quals, root);
+	startup_cost += qual_cost.startup;
+	run_cost = numGroups * (cpu_tuple_cost + qual_cost.per_tuple);
+
+	path->rows = numGroups;
+	path->disabled_nodes = enable_grainagg ? 0 : 1;
+	path->startup_cost = startup_cost;
+	path->total_cost = startup_cost + run_cost;
 }
 
 /*

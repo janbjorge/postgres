@@ -5,6 +5,7 @@ backend_sources += files(
   'createplan.c',
   'initsplan.c',
   'planagg.c',
+  'plangrain.c',
   'planmain.c',
   'planner.c',
   'setrefs.c',

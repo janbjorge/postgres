@@ -147,6 +147,8 @@ static void set_foreignscan_references(PlannerInfo *root,
 static void set_customscan_references(PlannerInfo *root,
 									  CustomScan *cscan,
 									  int rtoffset);
+static void set_grainagg_references(PlannerInfo *root, GrainAggregate *gagg,
+									int rtoffset);
 static Plan *set_append_references(PlannerInfo *root,
 								   Append *aplan,
 								   int rtoffset);
@@ -969,6 +971,9 @@ set_plan_refs(PlannerInfo *root, Plan *plan, int rtoffset)
 					fix_scan_expr(root, splan->limitCount, rtoffset, 1);
 			}
 			break;
+		case T_GrainAggregate:
+			set_grainagg_references(root, (GrainAggregate *) plan, rtoffset);
+			break;
 		case T_Agg:
 			{
 				Agg		   *agg = (Agg *) plan;
@@ -1785,6 +1790,43 @@ set_customscan_references(PlannerInfo *root,
 	}
 
 	cscan->custom_relids = offset_relid_set(cscan->custom_relids, rtoffset);
+}
+
+/*
+ * set_grainagg_references
+ *	   Do set_plan_references processing on a GrainAggregate
+ *
+ * The tlist and quals reference the tuples the index read returns, as an
+ * upper ForeignScan's reference its fdw_scan_tlist.
+ */
+static void
+set_grainagg_references(PlannerInfo *root, GrainAggregate *gagg, int rtoffset)
+{
+	indexed_tlist *itlist = build_tlist_index(gagg->grain_scan_tlist);
+
+	gagg->heaprelid += rtoffset;
+	gagg->plan.targetlist = (List *)
+		fix_upper_expr(root,
+					   (Node *) gagg->plan.targetlist,
+					   itlist,
+					   INDEX_VAR,
+					   rtoffset,
+					   NUM_EXEC_TLIST((Plan *) gagg));
+	gagg->plan.qual = (List *)
+		fix_upper_expr(root,
+					   (Node *) gagg->plan.qual,
+					   itlist,
+					   INDEX_VAR,
+					   rtoffset,
+					   NUM_EXEC_QUAL((Plan *) gagg));
+	pfree(itlist);
+	gagg->grain_scan_tlist =
+		fix_scan_list(root, gagg->grain_scan_tlist,
+					  rtoffset, NUM_EXEC_TLIST((Plan *) gagg));
+	gagg->lower = (Expr *) fix_scan_expr(root, (Node *) gagg->lower,
+										 rtoffset, 1);
+	gagg->upper = (Expr *) fix_scan_expr(root, (Node *) gagg->upper,
+										 rtoffset, 1);
 }
 
 /*

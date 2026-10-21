@@ -890,6 +890,13 @@
   boot_val => 'true',
 },
 
+{ name => 'enable_grainagg', type => 'bool', context => 'PGC_USERSET', group => 'QUERY_TUNING_METHOD',
+  short_desc => 'Enables the planner\'s use of grain indexes for GROUP BY date_bin(...).',
+  flags => 'GUC_EXPLAIN',
+  variable => 'enable_grainagg',
+  boot_val => 'true',
+},
+
 { name => 'enable_group_by_reordering', type => 'bool', context => 'PGC_USERSET', group => 'QUERY_TUNING_METHOD',
   short_desc => 'Enables reordering of GROUP BY keys.',
   flags => 'GUC_EXPLAIN',

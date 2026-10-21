@@ -44,6 +44,7 @@ OBJS = \
 	nodeFunctionscan.o \
 	nodeGather.o \
 	nodeGatherMerge.o \
+	nodeGrainAggregate.o \
 	nodeGroup.o \
 	nodeHash.o \
 	nodeHashjoin.o \

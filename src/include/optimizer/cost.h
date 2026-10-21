@@ -70,6 +70,7 @@ extern PGDLLIMPORT bool enable_parallel_append;
 extern PGDLLIMPORT bool enable_parallel_hash;
 extern PGDLLIMPORT bool enable_partition_pruning;
 extern PGDLLIMPORT bool enable_presorted_aggregate;
+extern PGDLLIMPORT bool enable_grainagg;
 extern PGDLLIMPORT bool enable_async_append;
 extern PGDLLIMPORT int constraint_exclusion;
 
@@ -137,6 +138,9 @@ extern void cost_agg(Path *path, PlannerInfo *root,
 					 int disabled_nodes,
 					 Cost input_startup_cost, Cost input_total_cost,
 					 double input_tuples, double input_width);
+extern void cost_grainagg(Path *path, PlannerInfo *root, RelOptInfo *heaprel,
+						  int naggs, List *quals, double numGroups,
+						  double tailfrac);
 extern void cost_windowagg(Path *path, PlannerInfo *root,
 						   List *windowFuncs, WindowClause *winclause,
 						   int input_disabled_nodes,

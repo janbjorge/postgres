@@ -24,7 +24,6 @@
 
 /* Sizes of the fixed arrays in the metapage and the aggregates */
 #define GRAIN_MAX_LEVELS	8
-#define GRAIN_MAX_VALUES	8
 
 /*
  * The metapage, block 0, the only page of a grain index.  Its special space
@@ -104,20 +103,6 @@ typedef struct GrainCache
 	Oid			markerrelid;
 } GrainCache;
 
-/*
- * Aggregates of one bucket.  sum is a numeric Datum, or 0 when no non-null
- * value has been added.
- */
-typedef struct GrainAgg
-{
-	TimestampTz bucket;
-	int64		n;				/* count(*) */
-	int64		nn[GRAIN_MAX_VALUES];	/* count(value) */
-	Datum		sum[GRAIN_MAX_VALUES];
-	int64		min[GRAIN_MAX_VALUES];
-	int64		max[GRAIN_MAX_VALUES];
-} GrainAgg;
-
 /* grain.c */
 extern int64 grain_options_delay(Relation index, int64 finest);
 extern int64 grain_interval_usecs(const Interval *itv, const char *what);
@@ -126,7 +111,6 @@ extern TimestampTz grain_bin(TimestampTz ts, int64 width, TimestampTz origin);
 /* grain_state.c */
 extern void grain_build_state(Relation index, const GrainSpec *spec);
 extern GrainCache *grain_get_cache(Relation index);
-extern TimestampTz grain_read_watermark(Relation index);
 extern void grain_write_watermark(Relation index, TimestampTz watermark);
 extern void grain_insert_marker(Relation markerrel, TimestampTz bucket);
 extern void grain_agg_init(GrainAgg *agg, TimestampTz bucket);

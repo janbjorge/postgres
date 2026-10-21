@@ -5922,6 +5922,21 @@ ANY <replaceable class="parameter">num_sync</replaceable> ( <replaceable class="
       </listitem>
      </varlistentry>
 
+     <varlistentry id="guc-enable-grainagg" xreflabel="enable_grainagg">
+      <term><varname>enable_grainagg</varname> (<type>boolean</type>)
+      <indexterm>
+       <primary><varname>enable_grainagg</varname> configuration parameter</primary>
+      </indexterm>
+      </term>
+      <listitem>
+       <para>
+        Enables or disables the query planner's use of grain indexes to
+        compute a <literal>GROUP BY date_bin(...)</literal> from their
+        summaries.  The default is <literal>on</literal>.
+       </para>
+      </listitem>
+     </varlistentry>
+
      <varlistentry id="guc-enable-group-by-reordering" xreflabel="enable_group_by_reordering">
       <term><varname>enable_group_by_reordering</varname> (<type>boolean</type>)
       <indexterm>

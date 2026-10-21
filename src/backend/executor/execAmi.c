@@ -29,6 +29,7 @@
 #include "executor/nodeFunctionscan.h"
 #include "executor/nodeGather.h"
 #include "executor/nodeGatherMerge.h"
+#include "executor/nodeGrainAggregate.h"
 #include "executor/nodeGroup.h"
 #include "executor/nodeHash.h"
 #include "executor/nodeHashjoin.h"
@@ -273,6 +274,10 @@ ExecReScan(PlanState *node)
 
 		case T_AggState:
 			ExecReScanAgg((AggState *) node);
+			break;
+
+		case T_GrainAggregateState:
+			ExecReScanGrainAggregate((GrainAggregateState *) node);
 			break;
 
 		case T_WindowAggState:

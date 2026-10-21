@@ -76,7 +76,7 @@ test: brin_bloom brin_multi
 # ----------
 # grain, the time-bucket aggregate index
 # ----------
-test: grain
+test: grain grain_agg
 
 # ----------
 # Another group of parallel tests

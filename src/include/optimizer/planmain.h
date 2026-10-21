@@ -37,6 +37,12 @@ extern RelOptInfo *query_planner(PlannerInfo *root,
 extern void preprocess_minmax_aggregates(PlannerInfo *root);
 
 /*
+ * prototypes for plan/plangrain.c
+ */
+extern void add_grain_agg_paths(PlannerInfo *root, RelOptInfo *input_rel,
+								RelOptInfo *grouped_rel);
+
+/*
  * prototypes for plan/createplan.c
  */
 extern Plan *create_plan(PlannerInfo *root, Path *best_path);

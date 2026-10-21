@@ -1247,6 +1247,35 @@ typedef struct Agg
 } Agg;
 
 /* ----------------
+ *		grain aggregate node
+ *
+ * Computes GROUP BY date_bin(...) and the aggregates a grain index keeps
+ * from that index, for the rows of table heaprelid whose time key lies
+ * between lower and upper.  grain_scan_tlist describes the tuples the index
+ * read returns: the date_bin() call and the Aggrefs.  targetlist and qual
+ * (HAVING) reference them through INDEX_VAR Vars, as an upper ForeignScan's
+ * reference its fdw_scan_tlist.
+ * ----------------
+ */
+typedef struct GrainAggregate
+{
+	Plan		plan;
+	/* range table index of the table */
+	Index		heaprelid;
+	/* OID of the grain index */
+	Oid			indexid;
+	/* bucket width in microseconds, one of the index's levels */
+	int64		width;
+	/* bounds on the time key */
+	Expr	   *lower;
+	bool		lowerinclusive;
+	Expr	   *upper;
+	bool		upperinclusive;
+	/* tlist describing the tuples the index read returns */
+	List	   *grain_scan_tlist;
+} GrainAggregate;
+
+/* ----------------
  *		window aggregate node
  * ----------------
  */
