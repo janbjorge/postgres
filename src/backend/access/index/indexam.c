@@ -238,6 +238,32 @@ index_insert(Relation indexRelation,
 											 indexInfo);
 }
 
+/* ----------------
+ *		index_notify_delete - tell an index that a heap tuple went away
+ *
+ * Called when a heap tuple is deleted, or replaced by a new version, for
+ * index AMs that set amnotifydelete.  values and isnull describe the old
+ * tuple.  Most AMs don't need this: they learn of dead tuples at VACUUM.
+ * An AM that summarizes column values, and must stay exact for every
+ * snapshot, has to hear of the change in the deleting transaction.
+ * ----------------
+ */
+void
+index_notify_delete(Relation indexRelation,
+					Datum *values,
+					bool *isnull,
+					ItemPointer heap_t_ctid,
+					Relation heapRelation,
+					IndexInfo *indexInfo)
+{
+	RELATION_CHECKS;
+	CHECK_REL_PROCEDURE(amnotifydelete);
+
+	indexRelation->rd_indam->amnotifydelete(indexRelation, values, isnull,
+											heap_t_ctid, heapRelation,
+											indexInfo);
+}
+
 /* -------------------------
  *		index_insert_cleanup - clean up after all index inserts are done
  * -------------------------
