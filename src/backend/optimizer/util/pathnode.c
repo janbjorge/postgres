@@ -3385,6 +3385,59 @@ create_minmaxagg_path(PlannerInfo *root,
 }
 
 /*
+ * create_grainagg_path
+ *	  Creates a pathnode that represents grouping computed from a grain index
+ *
+ * 'rel' is the grouping relation, 'heaprel' the table the index is on.
+ * 'lower' and 'upper' bound the time key; 'groupexpr' is the date_bin()
+ * call grouped by, and 'aggrefs' the Aggrefs of the target and 'quals'.
+ * 'numGroups' is the estimated number of buckets, and 'tailfrac' the
+ * estimated fraction of the window no summary covers.
+ */
+GrainAggregatePath *
+create_grainagg_path(PlannerInfo *root,
+					 RelOptInfo *rel,
+					 RelOptInfo *heaprel,
+					 Oid indexid,
+					 int64 width,
+					 Expr *lower, bool lowerinclusive,
+					 Expr *upper, bool upperinclusive,
+					 Expr *groupexpr,
+					 List *aggrefs,
+					 List *quals,
+					 double numGroups,
+					 double tailfrac)
+{
+	GrainAggregatePath *pathnode = makeNode(GrainAggregatePath);
+
+	pathnode->path.pathtype = T_GrainAggregate;
+	pathnode->path.parent = rel;
+	pathnode->path.pathtarget = rel->reltarget;
+	pathnode->path.param_info = NULL;
+	/* The index read runs SPI queries, which a parallel worker can't */
+	pathnode->path.parallel_aware = false;
+	pathnode->path.parallel_safe = false;
+	pathnode->path.parallel_workers = 0;
+	pathnode->path.pathkeys = NIL;
+
+	pathnode->heaprelid = heaprel->relid;
+	pathnode->indexid = indexid;
+	pathnode->width = width;
+	pathnode->lower = lower;
+	pathnode->lowerinclusive = lowerinclusive;
+	pathnode->upper = upper;
+	pathnode->upperinclusive = upperinclusive;
+	pathnode->groupexpr = groupexpr;
+	pathnode->aggrefs = aggrefs;
+	pathnode->quals = quals;
+
+	cost_grainagg(&pathnode->path, root, heaprel, list_length(aggrefs),
+				  quals, numGroups, tailfrac);
+
+	return pathnode;
+}
+
+/*
  * create_windowagg_path
  *	  Creates a pathnode that represents computation of window functions
  *

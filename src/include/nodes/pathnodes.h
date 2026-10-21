@@ -2650,6 +2650,25 @@ typedef struct MinMaxAggPath
 } MinMaxAggPath;
 
 /*
+ * GrainAggregatePath represents grouping computed from a grain index; see the
+ * GrainAggregate plan node.
+ */
+typedef struct GrainAggregatePath
+{
+	Path		path;
+	Index		heaprelid;		/* the table's relid */
+	Oid			indexid;		/* the grain index */
+	int64		width;			/* bucket width in microseconds */
+	Expr	   *lower;			/* bounds on the time key */
+	bool		lowerinclusive;
+	Expr	   *upper;
+	bool		upperinclusive;
+	Expr	   *groupexpr;		/* the date_bin() call */
+	List	   *aggrefs;		/* the Aggrefs the target and quals use */
+	List	   *quals;			/* HAVING quals, if any */
+} GrainAggregatePath;
+
+/*
  * WindowAggPath represents generic computation of window functions
  */
 typedef struct WindowAggPath

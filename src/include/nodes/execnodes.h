@@ -2480,6 +2480,28 @@ typedef struct AggState
 } AggState;
 
 /* ----------------
+ *	 GrainAggregateState information
+ *
+ *		The buckets the index read returns are kept in a tuplestore of
+ *		ss_ScanTupleSlot's format, read once on the first call.
+ * ----------------
+ */
+typedef struct GrainAggregateState
+{
+	ScanState	ss;				/* the table is ss_currentRelation */
+	Relation	index;
+	ExprState  *lower;
+	ExprState  *upper;
+	int		   *colkind;		/* GrainColumn of each scan tuple column */
+	int		   *colvalue;		/* its value column, for an aggregate */
+	Oid		   *coltype;		/* its type */
+	Datum	   *values;			/* workspace for one scan tuple */
+	bool	   *nulls;
+	Tuplestorestate *buckets;
+	bool		read;			/* buckets has been filled */
+} GrainAggregateState;
+
+/* ----------------
  *	WindowAggState information
  * ----------------
  */

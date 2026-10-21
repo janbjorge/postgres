@@ -86,6 +86,7 @@
 #include "executor/nodeFunctionscan.h"
 #include "executor/nodeGather.h"
 #include "executor/nodeGatherMerge.h"
+#include "executor/nodeGrainAggregate.h"
 #include "executor/nodeGroup.h"
 #include "executor/nodeHash.h"
 #include "executor/nodeHashjoin.h"
@@ -340,6 +341,12 @@ ExecInitNode(Plan *node, EState *estate, int eflags)
 		case T_Agg:
 			result = (PlanState *) ExecInitAgg((Agg *) node,
 											   estate, eflags);
+			break;
+
+		case T_GrainAggregate:
+			result = (PlanState *)
+				ExecInitGrainAggregate((GrainAggregate *) node,
+									   estate, eflags);
 			break;
 
 		case T_WindowAgg:
@@ -705,6 +712,10 @@ ExecEndNode(PlanState *node)
 
 		case T_AggState:
 			ExecEndAgg((AggState *) node);
+			break;
+
+		case T_GrainAggregateState:
+			ExecEndGrainAggregate((GrainAggregateState *) node);
 			break;
 
 		case T_WindowAggState:

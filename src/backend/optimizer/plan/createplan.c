@@ -108,6 +108,8 @@ static Unique *create_unique_plan(PlannerInfo *root, UniquePath *best_path, int 
 static Agg *create_agg_plan(PlannerInfo *root, AggPath *best_path);
 static Plan *create_groupingsets_plan(PlannerInfo *root, GroupingSetsPath *best_path);
 static Result *create_minmaxagg_plan(PlannerInfo *root, MinMaxAggPath *best_path);
+static GrainAggregate *create_grainagg_plan(PlannerInfo *root,
+											GrainAggregatePath *best_path);
 static WindowAgg *create_windowagg_plan(PlannerInfo *root, WindowAggPath *best_path);
 static SetOp *create_setop_plan(PlannerInfo *root, SetOpPath *best_path,
 								int flags);
@@ -507,6 +509,10 @@ create_plan_recurse(PlannerInfo *root, Path *best_path, int flags)
 				plan = (Plan *) create_agg_plan(root,
 												(AggPath *) best_path);
 			}
+			break;
+		case T_GrainAggregate:
+			plan = (Plan *)
+				create_grainagg_plan(root, (GrainAggregatePath *) best_path);
 			break;
 		case T_WindowAgg:
 			plan = (Plan *) create_windowagg_plan(root,
@@ -2461,6 +2467,45 @@ create_minmaxagg_plan(PlannerInfo *root, MinMaxAggPath *best_path)
 	 */
 	Assert(root->minmax_aggs == NIL);
 	root->minmax_aggs = best_path->mmaggregates;
+
+	return plan;
+}
+
+/*
+ * create_grainagg_plan
+ *
+ *	  Create a GrainAggregate plan for 'best_path'.  The tuples the index read
+ *	  returns hold the date_bin() call, then each Aggref.
+ */
+static GrainAggregate *
+create_grainagg_plan(PlannerInfo *root, GrainAggregatePath *best_path)
+{
+	GrainAggregate *plan = makeNode(GrainAggregate);
+	List	   *scan_tlist;
+	ListCell   *lc;
+
+	scan_tlist = list_make1(makeTargetEntry(best_path->groupexpr, 1, NULL,
+											false));
+	foreach(lc, best_path->aggrefs)
+		scan_tlist = lappend(scan_tlist,
+							 makeTargetEntry((Expr *) lfirst(lc),
+											 list_length(scan_tlist) + 1,
+											 NULL, false));
+
+	plan->plan.targetlist = build_path_tlist(root, &best_path->path);
+	plan->plan.qual = order_qual_clauses(root, best_path->quals);
+	plan->plan.lefttree = NULL;
+	plan->plan.righttree = NULL;
+	plan->heaprelid = best_path->heaprelid;
+	plan->indexid = best_path->indexid;
+	plan->width = best_path->width;
+	plan->lower = best_path->lower;
+	plan->lowerinclusive = best_path->lowerinclusive;
+	plan->upper = best_path->upper;
+	plan->upperinclusive = best_path->upperinclusive;
+	plan->grain_scan_tlist = scan_tlist;
+
+	copy_generic_path_info(&plan->plan, (Path *) best_path);
 
 	return plan;
 }

@@ -42,6 +42,7 @@
 #include "utils/rel.h"
 #include "utils/ruleutils.h"
 #include "utils/snapmgr.h"
+#include "utils/timestamp.h"
 #include "utils/tuplesort.h"
 #include "utils/tuplestore.h"
 #include "utils/typcache.h"
@@ -145,6 +146,8 @@ static void show_scan_io_usage(ScanState *planstate,
 static void show_instrumentation_count(const char *qlabel, int which,
 									   PlanState *planstate, ExplainState *es);
 static void show_foreignscan_info(ForeignScanState *fsstate, ExplainState *es);
+static void show_grainagg_info(GrainAggregateState *gstate, List *ancestors,
+							   ExplainState *es);
 static const char *explain_get_index_name(Oid indexId);
 static bool peek_buffer_usage(ExplainState *es, const BufferUsage *usage);
 static void show_buffer_usage(ExplainState *es, const BufferUsage *usage);
@@ -1218,6 +1221,10 @@ ExplainPreScanNode(PlanState *planstate, Bitmapset **rels_used)
 			*rels_used = bms_add_members(*rels_used,
 										 ((CustomScan *) plan)->custom_relids);
 			break;
+		case T_GrainAggregate:
+			*rels_used = bms_add_member(*rels_used,
+										((GrainAggregate *) plan)->heaprelid);
+			break;
 		case T_ModifyTable:
 			*rels_used = bms_add_member(*rels_used,
 										((ModifyTable *) plan)->nominalRelation);
@@ -1525,6 +1532,9 @@ ExplainNode(PlanState *planstate, List *ancestors,
 			else
 				pname = sname;
 			break;
+		case T_GrainAggregate:
+			pname = sname = "Grain Aggregate";
+			break;
 		case T_Material:
 			pname = sname = "Materialize";
 			break;
@@ -1684,6 +1694,19 @@ ExplainNode(PlanState *planstate, List *ancestors,
 		case T_CustomScan:
 			if (((Scan *) plan)->scanrelid > 0)
 				ExplainScanTarget((Scan *) plan, es);
+			break;
+		case T_GrainAggregate:
+			{
+				GrainAggregate *gagg = (GrainAggregate *) plan;
+				const char *indexname = explain_get_index_name(gagg->indexid);
+
+				if (es->format == EXPLAIN_FORMAT_TEXT)
+					appendStringInfo(es->str, " using %s",
+									 quote_identifier(indexname));
+				else
+					ExplainPropertyText("Index Name", indexname, es);
+				ExplainTargetRel(plan, gagg->heaprelid, es);
+			}
 			break;
 		case T_IndexScan:
 			{
@@ -2155,6 +2178,14 @@ ExplainNode(PlanState *planstate, List *ancestors,
 				show_instrumentation_count("Rows Removed by Filter", 1,
 										   planstate, es);
 			show_foreignscan_info((ForeignScanState *) planstate, es);
+			break;
+		case T_GrainAggregate:
+			show_grainagg_info((GrainAggregateState *) planstate,
+							   ancestors, es);
+			show_upper_qual(plan->qual, "Filter", planstate, ancestors, es);
+			if (plan->qual)
+				show_instrumentation_count("Rows Removed by Filter", 1,
+										   planstate, es);
 			break;
 		case T_CustomScan:
 			{
@@ -4601,6 +4632,37 @@ ExplainIndexScanDetails(Oid indexid, ScanDirection indexorderdir,
 }
 
 /*
+ * Show the bucket width and the window of the time key a GrainAggregate reads.
+ */
+static void
+show_grainagg_info(GrainAggregateState *gstate, List *ancestors,
+				   ExplainState *es)
+{
+	GrainAggregate *plan = (GrainAggregate *) gstate->ss.ps.plan;
+	Interval	width = {0};
+	char	   *widthstr;
+	List	   *context;
+	char	   *lower;
+	char	   *upper;
+
+	width.day = plan->width / USECS_PER_DAY;
+	width.time = plan->width % USECS_PER_DAY;
+	widthstr = DatumGetCString(DirectFunctionCall1(interval_out,
+												   IntervalPGetDatum(&width)));
+	ExplainPropertyText("Bucket Width", widthstr, es);
+
+	context = set_deparse_context_plan(es->deparse_cxt, (Plan *) plan,
+									   ancestors);
+	lower = deparse_expression((Node *) plan->lower, context, false, false);
+	upper = deparse_expression((Node *) plan->upper, context, false, false);
+	ExplainPropertyText("Window",
+						psprintf("%s%s, %s%s",
+								 plan->lowerinclusive ? "[" : "(", lower,
+								 upper, plan->upperinclusive ? "]" : ")"),
+						es);
+}
+
+/*
  * Show the target of a Scan node
  */
 static void
@@ -4650,6 +4712,7 @@ ExplainTargetRel(Plan *plan, Index rti, ExplainState *es)
 		case T_TidRangeScan:
 		case T_ForeignScan:
 		case T_CustomScan:
+		case T_GrainAggregate:
 		case T_ModifyTable:
 			/* Assert it's on a real relation */
 			Assert(rte->rtekind == RTE_RELATION);

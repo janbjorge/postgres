@@ -5225,6 +5225,8 @@ set_deparse_plan(deparse_namespace *dpns, Plan *plan)
 		dpns->index_tlist = ((ForeignScan *) plan)->fdw_scan_tlist;
 	else if (IsA(plan, CustomScan))
 		dpns->index_tlist = ((CustomScan *) plan)->custom_scan_tlist;
+	else if (IsA(plan, GrainAggregate))
+		dpns->index_tlist = ((GrainAggregate *) plan)->grain_scan_tlist;
 	else
 		dpns->index_tlist = NIL;
 }

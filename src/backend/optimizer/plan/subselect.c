@@ -3110,6 +3110,16 @@ finalize_plan(PlannerInfo *root, Plan *plan,
 			}
 			break;
 
+		case T_GrainAggregate:
+			{
+				GrainAggregate *gagg = (GrainAggregate *) plan;
+
+				/* grain_scan_tlist holds no Params */
+				finalize_primnode((Node *) gagg->lower, &context);
+				finalize_primnode((Node *) gagg->upper, &context);
+			}
+			break;
+
 		case T_WindowAgg:
 			finalize_primnode(((WindowAgg *) plan)->startOffset,
 							  &context);

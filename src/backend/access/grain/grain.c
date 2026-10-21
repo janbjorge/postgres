@@ -28,6 +28,7 @@
 #include "access/htup_details.h"
 #include "access/reloptions.h"
 #include "access/table.h"
+#include "catalog/pg_aggregate.h"
 #include "catalog/pg_amop.h"
 #include "catalog/pg_opclass.h"
 #include "commands/vacuum.h"
@@ -35,6 +36,7 @@
 #include "miscadmin.h"
 #include "nodes/execnodes.h"
 #include "utils/builtins.h"
+#include "utils/fmgroids.h"
 #include "utils/lsyscache.h"
 #include "utils/regproc.h"
 #include "utils/rel.h"
@@ -477,6 +479,99 @@ graincostestimate(PlannerInfo *root, IndexPath *path, double loop_count,
 	*indexSelectivity = 1.0;
 	*indexCorrelation = 0.0;
 	*indexPages = 1.0;
+}
+
+/*
+ * Whether date_bin(width, key, origin) puts rows into the buckets of one of
+ * the index's levels, and if so that level's width in microseconds.  The
+ * origin need only fall on a bucket boundary of the index's origin.
+ */
+bool
+grain_index_width(Relation index, const Interval *width, TimestampTz origin,
+				  int64 *usecs)
+{
+	GrainSpec  *spec = &grain_get_cache(index)->spec;
+	int64		w;
+
+	if (INTERVAL_NOT_FINITE(width) || width->month != 0 ||
+		TIMESTAMP_NOT_FINITE(origin) ||
+		pg_mul_s64_overflow((int64) width->day, USECS_PER_DAY, &w) ||
+		pg_add_s64_overflow(w, width->time, &w))
+		return false;
+
+	for (int l = 0; l < spec->nlevels; l++)
+	{
+		if (spec->width[l] == w && (origin - spec->origin) % w == 0)
+		{
+			*usecs = w;
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
+ * Which of the aggregates grain keeps an Aggref computes, and for a value
+ * column, its position in valuecols, the table columns of the INCLUDE
+ * columns.  Only a plain call on the column itself qualifies: no DISTINCT,
+ * ORDER BY or FILTER, and no expression around the column.
+ */
+GrainColumn
+grain_aggref_column(const Aggref *aggref, const AttrNumber *valuecols,
+					int nvalues, int *value)
+{
+	GrainColumn kind;
+	Var		   *var;
+
+	*value = -1;
+	if (aggref->aggdistinct != NIL || aggref->aggorder != NIL ||
+		aggref->aggfilter != NULL || aggref->agglevelsup != 0 ||
+		aggref->aggkind != AGGKIND_NORMAL ||
+		aggref->aggsplit != AGGSPLIT_SIMPLE)
+		return GRAIN_COLUMN_NONE;
+
+	switch (aggref->aggfnoid)
+	{
+		case F_COUNT_:
+			if (!aggref->aggstar)
+				return GRAIN_COLUMN_NONE;
+			return GRAIN_COLUMN_COUNT_STAR;
+		case F_COUNT_ANY:
+			kind = GRAIN_COLUMN_COUNT;
+			break;
+		case F_SUM_INT2:
+		case F_SUM_INT4:
+		case F_SUM_INT8:
+			kind = GRAIN_COLUMN_SUM;
+			break;
+		case F_MIN_INT2:
+		case F_MIN_INT4:
+		case F_MIN_INT8:
+			kind = GRAIN_COLUMN_MIN;
+			break;
+		case F_MAX_INT2:
+		case F_MAX_INT4:
+		case F_MAX_INT8:
+			kind = GRAIN_COLUMN_MAX;
+			break;
+		default:
+			return GRAIN_COLUMN_NONE;
+	}
+
+	if (list_length(aggref->args) != 1)
+		return GRAIN_COLUMN_NONE;
+	var = (Var *) ((TargetEntry *) linitial(aggref->args))->expr;
+	if (!IsA(var, Var) || var->varlevelsup != 0)
+		return GRAIN_COLUMN_NONE;
+	for (int i = 0; i < nvalues; i++)
+	{
+		if (valuecols[i] == var->varattno)
+		{
+			*value = i;
+			return kind;
+		}
+	}
+	return GRAIN_COLUMN_NONE;
 }
 
 /*

@@ -4437,6 +4437,9 @@ create_ordinary_grouping_paths(PlannerInfo *root, RelOptInfo *input_rel,
 							  partially_grouped_rel, agg_costs, gd,
 							  extra);
 
+	/* A grain index may hold the groups already */
+	add_grain_agg_paths(root, input_rel, grouped_rel);
+
 	/* Give a helpful error if we failed to find any implementation */
 	if (grouped_rel->pathlist == NIL)
 		ereport(ERROR,

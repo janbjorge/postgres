@@ -1148,7 +1148,12 @@ GlobalTransactionData
 GlobalVisHorizonKind
 GlobalVisState
 GrainAgg
+GrainAggregate
+GrainAggregatePath
+GrainAggregateState
+GrainBucketsState
 GrainCache
+GrainColumn
 GrainCtx
 GrainInsertState
 GrainLevelRows
@@ -1157,10 +1162,12 @@ GrainOptions
 GrainPageOpaque
 GrainPageOpaqueData
 GrainRange
+GrainReadCallback
 GrainReadState
 GrainRow
 GrainSpec
 GrainSummarizeChunk
+GrainTargetContext
 GrantRoleOptions
 GrantRoleStmt
 GrantStmt

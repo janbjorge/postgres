@@ -59,14 +59,15 @@ LEFT JOIN pg_depend d ON d.classid = 'pg_class'::regclass AND d.objid = c.oid
 WHERE c.relname LIKE 'pg_grain_%'
 ORDER BY c.relkind, d.deptype, c.relname ~ 'marker';
 
--- The planner never uses it
+-- A plain scan never uses it
 EXPLAIN (COSTS OFF)
 SELECT count(*) FROM grain_orders
 WHERE created_at >= '2020-01-02' AND status = 'paid';
 
--- grain against a plain GROUP BY, under one snapshot: rows that differ
+-- grain against a plain GROUP BY, under one snapshot: rows that differ.
+-- The GROUP BY must group the rows rather than read the index.
 CREATE FUNCTION grain_differ(width interval, lo timestamptz, hi timestamptz)
-RETURNS bigint LANGUAGE sql STABLE AS $$
+RETURNS bigint LANGUAGE sql STABLE SET enable_grainagg = off AS $$
     WITH g AS (
         SELECT bucket, n, nn, sum, min, max
         FROM grain_buckets('grain_orders_paid', width, lo, hi)),

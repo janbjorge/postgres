@@ -166,13 +166,21 @@ grain_range_sql(GrainCtx *ctx)
 
 /*
  * Open what summarization and the reader need.  The caller has done
- * SPI_connect().
+ * SPI_connect(), inside a GUC nest level of its own.
  */
 static void
 grain_ctx_open(GrainCtx *ctx, Relation heap, Relation index, Snapshot snapshot,
 			   LOCKMODE lockmode, MemoryContext aggcxt)
 {
 	memset(ctx, 0, sizeof(GrainCtx));
+
+	/*
+	 * The range query is a GROUP BY date_bin() too.  It must group the rows,
+	 * not read the summaries it is computing or reading around.
+	 */
+	(void) set_config_option("enable_grainagg", "off",
+							 PGC_USERSET, PGC_S_SESSION,
+							 GUC_ACTION_SAVE, true, 0, false);
 	ctx->heap = heap;
 	ctx->index = index;
 	ctx->cache = grain_get_cache(index);
@@ -1034,13 +1042,122 @@ read_found_rows(void *arg, const GrainAgg *agg)
 }
 
 /*
+ * Report count(*), and count, sum, min and max of each INCLUDE column, per
+ * bucket of the given width for the rows with lower <= time key < upper, as
+ * a plain GROUP BY date_bin(width, key, origin) gives them under snapshot.
+ * emit() is called for each bucket with rows, in bucket order; agg is valid
+ * only during the call.  The window must be finite, and the width one of the
+ * index's levels.  The caller has checked that the user may read every row of
+ * the table.
+ */
+void
+grain_read(Relation heap, Relation index, Snapshot snapshot, int64 width,
+		   TimestampTz lower, TimestampTz upper, GrainReadCallback emit,
+		   void *arg)
+{
+	GrainCtx	ctx;
+	GrainSpec  *spec;
+	GrainReadState rs = {0};
+	GrainLevelRows top = {0};
+	int			save_nestlevel;
+
+	if (!index->rd_index->indisvalid)
+		ereport(ERROR,
+				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+				 errmsg("index \"%s\" is not valid",
+						RelationGetRelationName(index))));
+	Assert(!TIMESTAMP_NOT_FINITE(lower) && !TIMESTAMP_NOT_FINITE(upper));
+
+	spec = &grain_get_cache(index)->spec;
+	rs.outlevel = -1;
+	for (int l = 0; l < spec->nlevels; l++)
+		if (spec->width[l] == width)
+			rs.outlevel = l;
+	if (rs.outlevel < 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("width must be one of the bucket widths of index \"%s\"",
+						RelationGetRelationName(index))));
+
+	save_nestlevel = NewGUCNestLevel();
+	RestrictSearchPath();
+	if (SPI_connect() != SPI_OK_CONNECT)
+		elog(ERROR, "SPI_connect failed");
+	grain_ctx_open(&ctx, heap, index, snapshot, AccessShareLock,
+				   CurrentMemoryContext);
+
+	rs.ctx = &ctx;
+	rs.lo = lower;
+	rs.hi = upper;
+	if (lower < upper)
+	{
+		int64		nout;
+
+		rs.first = grain_bin(lower, width, spec->origin);
+		nout = (upper - rs.first + width - 1) / width;
+		if (nout > GRAIN_MAX_OUTPUT_BUCKETS)
+			ereport(ERROR,
+					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
+					 errmsg("window of a grain index read has too many buckets"),
+					 errhint("Use a wider bucket width or a shorter window.")));
+		rs.nout = (int) nout;
+	}
+	rs.out = palloc_array(GrainAgg, Max(rs.nout, 1));
+	rs.markers = grain_read_markers(&ctx, &rs.nmarkers, NULL);
+	rs.watermark = grain_read_watermark(index);
+
+	grain_scan_summary(&ctx, rs.outlevel, rs.first,
+					   rs.first + (int64) rs.nout * width,
+					   read_found_stored, &top);
+	for (int i = 0; i < rs.nout; i++)
+	{
+		TimestampTz b = rs.first + i * width;
+
+		grain_agg_init(&rs.out[i], b);
+		read_bucket(&rs, rs.outlevel, b, &top, &rs.out[i]);
+	}
+	/* Scan at the output width, so a range returns a row per output bucket */
+	for (int i = 0; i < rs.nscan; i++)
+		grain_scan_range(&ctx, width, rs.scan[i].lo, rs.scan[i].hi,
+						 read_found_rows, &rs);
+
+	for (int i = 0; i < rs.nout; i++)
+		if (rs.out[i].n > 0)
+			emit(arg, &rs.out[i]);
+
+	grain_ctx_close(&ctx);
+	if (SPI_finish() != SPI_OK_FINISH)
+		elog(ERROR, "SPI_finish failed");
+	AtEOXact_GUC(false, save_nestlevel);
+}
+
+typedef struct GrainBucketsState
+{
+	ReturnSetInfo *rsinfo;
+	int			nvalues;
+} GrainBucketsState;
+
+static void
+grain_buckets_emit(void *arg, const GrainAgg *agg)
+{
+	GrainBucketsState *state = (GrainBucketsState *) arg;
+	Datum		values[6];
+	bool		nulls[6] = {false};
+
+	values[0] = TimestampTzGetDatum(agg->bucket);
+	values[1] = Int64GetDatum(agg->n);
+	grain_agg_arrays(agg, state->nvalues, &values[2]);
+	tuplestore_putvalues(state->rsinfo->setResult, state->rsinfo->setDesc,
+						 values, nulls);
+}
+
+/*
  * grain_buckets(index regclass, width interval, lower timestamptz,
  *					upper timestamptz)
  *
  * count(*), and count, sum, min and max of each INCLUDE column, per bucket
- * of the given width for the rows with lower <= time key < upper, as the
- * plain GROUP BY date_bin(width, key, origin) would give them.  Buckets with
- * no rows are left out.  The width must be one of the index's levels.
+ * of the given width for the rows with lower <= time key < upper; see
+ * grain_read().  Buckets with no rows are left out.
  */
 Datum
 grain_buckets(PG_FUNCTION_ARGS)
@@ -1049,16 +1166,10 @@ grain_buckets(PG_FUNCTION_ARGS)
 	Interval   *width = PG_GETARG_INTERVAL_P(1);
 	TimestampTz lo = PG_GETARG_TIMESTAMPTZ(2);
 	TimestampTz hi = PG_GETARG_TIMESTAMPTZ(3);
-	ReturnSetInfo *rsinfo = (ReturnSetInfo *) fcinfo->resultinfo;
 	Oid			heapoid;
 	Relation	heap;
 	Relation	index;
-	GrainCtx	ctx;
-	GrainSpec  *spec;
-	GrainReadState rs = {0};
-	GrainLevelRows top = {0};
-	int64		usecs;
-	int			save_nestlevel;
+	GrainBucketsState state;
 	AclResult	aclresult;
 
 	InitMaterializedSRF(fcinfo, 0);
@@ -1078,90 +1189,17 @@ grain_buckets(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("grain_buckets() is not supported on tables with row-level security")));
-	if (!index->rd_index->indisvalid)
-		ereport(ERROR,
-				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
-				 errmsg("index \"%s\" is not valid",
-						RelationGetRelationName(index))));
 
 	if (TIMESTAMP_NOT_FINITE(lo) || TIMESTAMP_NOT_FINITE(hi))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("the window of grain_buckets() must be finite")));
 
-	spec = &grain_get_cache(index)->spec;
-	usecs = grain_interval_usecs(width, "width");
-	rs.outlevel = -1;
-	for (int l = 0; l < spec->nlevels; l++)
-		if (spec->width[l] == usecs)
-			rs.outlevel = l;
-	if (rs.outlevel < 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("width must be one of the bucket widths of index \"%s\"",
-						RelationGetRelationName(index))));
-
-	save_nestlevel = NewGUCNestLevel();
-	RestrictSearchPath();
-	if (SPI_connect() != SPI_OK_CONNECT)
-		elog(ERROR, "SPI_connect failed");
-	grain_ctx_open(&ctx, heap, index, GetActiveSnapshot(), AccessShareLock,
-				   CurrentMemoryContext);
-
-	rs.ctx = &ctx;
-	rs.lo = lo;
-	rs.hi = hi;
-	if (lo < hi)
-	{
-		int64		nout;
-
-		rs.first = grain_bin(lo, usecs, spec->origin);
-		nout = (hi - rs.first + usecs - 1) / usecs;
-		if (nout > GRAIN_MAX_OUTPUT_BUCKETS)
-			ereport(ERROR,
-					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
-					 errmsg("window of grain_buckets() has too many buckets"),
-					 errhint("Use a wider bucket width or a shorter window.")));
-		rs.nout = (int) nout;
-	}
-	rs.out = palloc_array(GrainAgg, Max(rs.nout, 1));
-	rs.markers = grain_read_markers(&ctx, &rs.nmarkers, NULL);
-	rs.watermark = grain_read_watermark(index);
-
-	grain_scan_summary(&ctx, rs.outlevel, rs.first,
-					   rs.first + (int64) rs.nout * usecs,
-					   read_found_stored, &top);
-	for (int i = 0; i < rs.nout; i++)
-	{
-		TimestampTz b = rs.first + i * usecs;
-
-		grain_agg_init(&rs.out[i], b);
-		read_bucket(&rs, rs.outlevel, b, &top, &rs.out[i]);
-	}
-	/* Scan at the output width, so a range returns a row per output bucket */
-	for (int i = 0; i < rs.nscan; i++)
-		grain_scan_range(&ctx, usecs, rs.scan[i].lo, rs.scan[i].hi,
-						 read_found_rows, &rs);
-
-	for (int i = 0; i < rs.nout; i++)
-	{
-		Datum		values[6];
-		bool		nulls[6] = {false};
-		GrainAgg   *agg = &rs.out[i];
-
-		if (agg->n == 0)
-			continue;
-		values[0] = TimestampTzGetDatum(agg->bucket);
-		values[1] = Int64GetDatum(agg->n);
-		grain_agg_arrays(agg, spec->nvalues, &values[2]);
-		tuplestore_putvalues(rsinfo->setResult, rsinfo->setDesc, values,
-							 nulls);
-	}
-
-	grain_ctx_close(&ctx);
-	if (SPI_finish() != SPI_OK_FINISH)
-		elog(ERROR, "SPI_finish failed");
-	AtEOXact_GUC(false, save_nestlevel);
+	state.rsinfo = (ReturnSetInfo *) fcinfo->resultinfo;
+	state.nvalues = grain_get_cache(index)->spec.nvalues;
+	grain_read(heap, index, GetActiveSnapshot(),
+			   grain_interval_usecs(width, "width"), lo, hi,
+			   grain_buckets_emit, &state);
 
 	index_close(index, AccessShareLock);
 	table_close(heap, AccessShareLock);

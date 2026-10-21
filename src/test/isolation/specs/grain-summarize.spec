@@ -19,7 +19,9 @@ setup
 	SELECT grain_summarize('grain_t_g');
 	ALTER INDEX grain_t_g SET (delay = '1 minute');
 
-	CREATE FUNCTION grain_t_differ() RETURNS bigint LANGUAGE sql STABLE AS $$
+	-- The GROUP BY must group the rows rather than read the index
+	CREATE FUNCTION grain_t_differ() RETURNS bigint LANGUAGE sql STABLE
+		SET enable_grainagg = off AS $$
 		WITH g AS (
 			SELECT bucket, n, sum[1] AS s, min[1] AS mn, max[1] AS mx
 			FROM grain_buckets('grain_t_g', '1 minute',

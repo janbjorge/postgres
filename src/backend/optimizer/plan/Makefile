@@ -17,6 +17,7 @@ OBJS = \
 	createplan.o \
 	initsplan.o \
 	planagg.o \
+	plangrain.o \
 	planmain.o \
 	planner.o \
 	setrefs.o \
