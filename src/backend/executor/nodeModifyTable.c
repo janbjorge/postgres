@@ -1553,6 +1553,10 @@ ExecDeleteEpilogue(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
 	EState	   *estate = context->estate;
 	TransitionCaptureState *ar_delete_trig_tcs;
 
+	/* Foreign tables and views have no tuple ID */
+	if (ItemPointerIsValid(tupleid))
+		ExecNotifyIndexesOfDelete(resultRelInfo, estate, 0, tupleid, NULL);
+
 	/*
 	 * If this delete is the result of a partition key update that moved the
 	 * tuple to a new partition, put this row into the transition OLD TABLE,
@@ -2356,7 +2360,8 @@ lreplace:
 static void
 ExecUpdateEpilogue(ModifyTableContext *context, UpdateContext *updateCxt,
 				   ResultRelInfo *resultRelInfo, ItemPointer tupleid,
-				   HeapTuple oldtuple, TupleTableSlot *slot)
+				   HeapTuple oldtuple, TupleTableSlot *oldSlot,
+				   TupleTableSlot *slot)
 {
 	ModifyTableState *mtstate = context->mtstate;
 	List	   *recheckIndexes = NIL;
@@ -2368,6 +2373,8 @@ ExecUpdateEpilogue(ModifyTableContext *context, UpdateContext *updateCxt,
 
 		if (updateCxt->updateIndexes == TU_Summarizing)
 			flags |= EIIT_ONLY_SUMMARIZING;
+		ExecNotifyIndexesOfDelete(resultRelInfo, context->estate, flags,
+								  tupleid, oldSlot);
 		recheckIndexes = ExecInsertIndexTuples(resultRelInfo, context->estate,
 											   flags, slot, NIL,
 											   NULL);
@@ -2747,7 +2754,7 @@ redo_act:
 		(estate->es_processed)++;
 
 	ExecUpdateEpilogue(context, &updateCxt, resultRelInfo, tupleid, oldtuple,
-					   slot);
+					   oldSlot, slot);
 
 	/* Process RETURNING if present */
 	if (resultRelInfo->ri_projectReturning)
@@ -3458,7 +3465,9 @@ lmerge_matched:
 				if (result == TM_Ok)
 				{
 					ExecUpdateEpilogue(context, &updateCxt, resultRelInfo,
-									   tupleid, NULL, newslot);
+									   tupleid, NULL,
+									   resultRelInfo->ri_oldTupleSlot,
+									   newslot);
 					mtstate->mt_merge_updated += 1;
 				}
 				break;
