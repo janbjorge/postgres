@@ -1238,6 +1238,11 @@ ExecInsert(ModifyTableContext *context,
 			table_tuple_complete_speculative(resultRelationDesc, slot,
 											 specToken, !specConflict);
 
+			/* The indexes were told of the tuple we just killed */
+			if (specConflict)
+				ExecNotifyIndexesOfDelete(resultRelInfo, estate, 0,
+										  &slot->tts_tid, slot);
+
 			/*
 			 * Wake up anyone waiting for our decision.  They will re-check
 			 * the tuple, see that it's no longer speculative, and wait on our

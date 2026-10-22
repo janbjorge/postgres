@@ -37,6 +37,21 @@ DELETE FROM notify_tab WHERE k IN (5, 6);
 NOTICE:  notify_idx: deleted 50
 NOTICE:  notify_idx: deleted 150
 NOTICE:  notify_partial: deleted 150
+-- INSERT ... ON CONFLICT that finds the conflict before inserting has no
+-- tuple to remove, and neither has one that finds no conflict
+INSERT INTO notify_tab VALUES (2, 0, 0) ON CONFLICT DO NOTHING;
+INSERT INTO notify_tab VALUES (7, 70, 0) ON CONFLICT DO NOTHING;
+-- The call is made in the deleting transaction, even if it later aborts;
+-- an aborted insert is not reported
+BEGIN;
+DELETE FROM notify_tab WHERE k = 7;
+NOTICE:  notify_idx: deleted 70
+ROLLBACK;
+BEGIN;
+INSERT INTO notify_tab VALUES (8, 80, 0);
+ROLLBACK;
+-- TRUNCATE rebuilds the index instead of reporting rows
+TRUNCATE notify_tab;
 -- An index with no column references still hears of deletes
 CREATE TABLE notify_const (k int4);
 CREATE INDEX notify_const_idx ON notify_const USING dummy_index_am ((7));

@@ -417,12 +417,23 @@ amnotifydelete (Relation indexRelation,
    <literal>isnull</literal> are the index column values of the old tuple
    version, and <literal>heap_tid</literal> is its TID.  The call is made
    after the tuple is deleted, for <command>DELETE</command>, the delete
-   action of <command>MERGE</command>, a row moved to another partition, and
-   a delete applied by logical replication.  For an update, it is made
+   action of <command>MERGE</command>, a row moved to another partition, a
+   delete applied by logical replication, and a tuple that
+   <command>INSERT ... ON CONFLICT</command> inserted speculatively and
+   removed again because a concurrent insert conflicted.  For an update, it
+   is made
    whenever <function>aminsert</function> is called for the new version.
    HOT updates therefore don't call it, and an update that only needs new
    entries in summarizing indexes calls only those.  A partial index is
    called only if the old version satisfied its predicate.
+  </para>
+
+  <para>
+   The callback is not made for <command>TRUNCATE</command>, which rebuilds
+   the index through <function>ambuild</function>, nor when the transaction
+   aborts.  An index that changes its state in this callback or in
+   <function>aminsert</function> must therefore do so transactionally, so
+   that an abort undoes the change.
   </para>
 
   <para>
