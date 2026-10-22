@@ -5613,7 +5613,8 @@ restart:
  * RelationHasDeleteNotifyIndex -- whether any index on the relation has an
  * access method that wants amnotifydelete calls
  *
- * Computed along with the bitmaps of RelationGetIndexAttrBitmap().
+ * Computed along with the bitmaps of RelationGetIndexAttrBitmap(), so the
+ * first call after an invalidation builds them, as heap_update() would.
  */
 bool
 RelationHasDeleteNotifyIndex(Relation relation)

@@ -7,7 +7,7 @@ DATA = dummy_index_am--1.0.sql
 PGFILEDESC = "dummy_index_am - index access method template"
 
 REGRESS = reloptions notify_delete
-ISOLATION = notify_speculative
+ISOLATION = notify_speculative notify_repack
 TAP_TESTS = 1
 
 ifdef USE_PGXS

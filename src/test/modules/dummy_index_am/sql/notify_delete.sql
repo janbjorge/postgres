@@ -1,7 +1,10 @@
 -- Tests for amnotifydelete: every path that deletes a row, or replaces it
 -- with a new version, must tell the index the old value.
+-- Load the library quietly first: its string reloption validator prints
+-- notices when it is loaded.
 SET client_min_messages TO 'warning';
 CREATE EXTENSION IF NOT EXISTS dummy_index_am;
+LOAD 'dummy_index_am';
 RESET client_min_messages;
 
 CREATE TABLE notify_tab (k int4 PRIMARY KEY, v int4, w int4);

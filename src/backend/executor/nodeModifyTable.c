@@ -1488,9 +1488,9 @@ ExecPendingInserts(EState *estate)
 /*
  * ExecDeletePrologue -- subroutine for ExecDelete
  *
- * Prepare executor state for DELETE.  Actually, the only thing we have to do
- * here is execute BEFORE ROW triggers.  We return false if one of them makes
- * the delete a no-op; otherwise, return true.
+ * Prepare executor state for DELETE: open the indexes if one wants to hear
+ * of the delete, and execute BEFORE ROW triggers.  We return false if one of
+ * them makes the delete a no-op; otherwise, return true.
  */
 static bool
 ExecDeletePrologue(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
@@ -1499,6 +1499,15 @@ ExecDeletePrologue(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
 {
 	if (result)
 		*result = TM_Ok;
+
+	/*
+	 * Open the table's indexes, if we have not done so already, so that we
+	 * can tell them of the deleted tuple.  Take their locks before the tuple
+	 * is deleted, as an INSERT or UPDATE does.
+	 */
+	if (RelationHasDeleteNotifyIndex(resultRelInfo->ri_RelationDesc) &&
+		resultRelInfo->ri_IndexRelationDescs == NULL)
+		ExecOpenIndices(resultRelInfo, false);
 
 	/* BEFORE ROW DELETE triggers */
 	if (resultRelInfo->ri_TrigDesc &&
@@ -1594,7 +1603,7 @@ ExecDeleteEpilogue(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
  *		ExecDelete
  *
  *		DELETE is like UPDATE, except that we delete the tuple and no
- *		index modifications are needed.
+ *		index entries are added.
  *
  *		When deleting from a table, tupleid identifies the tuple to delete and
  *		oldtuple is NULL.  When deleting through a view INSTEAD OF trigger,
@@ -2537,10 +2546,10 @@ ExecUpdate(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
 	 * If the target tuple was concurrently updated, the trigger code will
 	 * have done EPQ and updated tupleid, following the update chain.  In this
 	 * case, we must fetch the most recent version of old tuple for the
-	 * benefit of RETURNING.  Technically, we could get away with not doing
-	 * this, if there is no RETURNING clause, or it doesn't refer to OLD, but
-	 * it seems preferable to always ensure that the contents of oldSlot are
-	 * correct.
+	 * benefit of RETURNING, and of indexes told of the old version.
+	 * Technically, we could get away with not doing this, if there is no
+	 * RETURNING clause, or it doesn't refer to OLD, but it seems preferable
+	 * to always ensure that the contents of oldSlot are correct.
 	 */
 	if (context->tmfd.traversed)
 	{

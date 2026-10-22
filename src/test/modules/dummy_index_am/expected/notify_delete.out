@@ -1,12 +1,13 @@
 -- Tests for amnotifydelete: every path that deletes a row, or replaces it
 -- with a new version, must tell the index the old value.
+-- Load the library quietly first: its string reloption validator prints
+-- notices when it is loaded.
 SET client_min_messages TO 'warning';
 CREATE EXTENSION IF NOT EXISTS dummy_index_am;
+LOAD 'dummy_index_am';
 RESET client_min_messages;
 CREATE TABLE notify_tab (k int4 PRIMARY KEY, v int4, w int4);
 CREATE INDEX notify_idx ON notify_tab USING dummy_index_am (v);
-NOTICE:  new option value for string parameter DefaultValue
-NOTICE:  new option value for string parameter NULL
 INSERT INTO notify_tab VALUES (1, 10, 0), (2, 20, 0), (3, 30, 0), (4, 40, 0);
 -- DELETE reports the old value
 DELETE FROM notify_tab WHERE k = 1;

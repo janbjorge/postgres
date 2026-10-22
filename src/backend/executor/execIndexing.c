@@ -528,9 +528,9 @@ ExecInsertIndexTuples(ResultRelInfo *resultRelInfo,
  *		version; otherwise it is fetched.  flags are those of
  *		ExecInsertIndexTuples; only EIIT_ONLY_SUMMARIZING is looked at.
  *
- *		A DELETE doesn't otherwise open the result relation's indexes.
- *		They are opened here only when the relcache says some index on the
- *		table wants the call, so other tables pay one cached lookup per row.
+ *		The caller must have opened the indexes, as for
+ *		ExecInsertIndexTuples, before deleting the tuple.  A table with no
+ *		index that wants the call pays one cached lookup per row.
  * ----------------------------------------------------------------
  */
 void
@@ -550,8 +550,7 @@ ExecNotifyIndexesOfDelete(ResultRelInfo *resultRelInfo,
 	if (!RelationHasDeleteNotifyIndex(heapRelation))
 		return;
 
-	if (resultRelInfo->ri_IndexRelationDescs == NULL)
-		ExecOpenIndices(resultRelInfo, false);
+	Assert(resultRelInfo->ri_IndexRelationDescs != NULL);
 
 	if (oldslot == NULL)
 	{

@@ -34,6 +34,7 @@ tests += {
   'isolation': {
     'specs': [
       'notify_speculative',
+      'notify_repack',
     ],
   },
   'tap': {
