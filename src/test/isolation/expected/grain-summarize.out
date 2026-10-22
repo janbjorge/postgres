@@ -1,0 +1,121 @@
+Parsed test spec with 4 sessions
+
+starting permutation: w_begin w_insert summarize w_commit check
+step w_begin: BEGIN;
+step w_insert: INSERT INTO grain_t VALUES (now() - interval '30 minutes', 1000);
+step summarize: SELECT grain_summarize('grain_t_g') >= 0 AS summarized; <waiting ...>
+step w_commit: COMMIT;
+step summarize: <... completed>
+summarized
+----------
+t         
+(1 row)
+
+step check: SELECT grain_t_differ() AS differ;
+differ
+------
+     0
+(1 row)
+
+
+starting permutation: w_begin w_delete w_update summarize w_commit check
+step w_begin: BEGIN;
+step w_delete: DELETE FROM grain_t WHERE t < now() - interval '150 minutes';
+step w_update: UPDATE grain_t SET v = v + 1 WHERE t >= now() - interval '90 minutes'
+				  AND t < now() - interval '80 minutes';
+step summarize: SELECT grain_summarize('grain_t_g') >= 0 AS summarized; <waiting ...>
+step w_commit: COMMIT;
+step summarize: <... completed>
+summarized
+----------
+t         
+(1 row)
+
+step check: SELECT grain_t_differ() AS differ;
+differ
+------
+     0
+(1 row)
+
+
+starting permutation: w_begin w_insert w_update summarize w_abort check
+step w_begin: BEGIN;
+step w_insert: INSERT INTO grain_t VALUES (now() - interval '30 minutes', 1000);
+step w_update: UPDATE grain_t SET v = v + 1 WHERE t >= now() - interval '90 minutes'
+				  AND t < now() - interval '80 minutes';
+step summarize: SELECT grain_summarize('grain_t_g') >= 0 AS summarized; <waiting ...>
+step w_abort: ROLLBACK;
+step summarize: <... completed>
+summarized
+----------
+t         
+(1 row)
+
+step check: SELECT grain_t_differ() AS differ;
+differ
+------
+     0
+(1 row)
+
+
+starting permutation: summarize w_begin w_insert w_delete w_update w_commit check summarize check
+step summarize: SELECT grain_summarize('grain_t_g') >= 0 AS summarized;
+summarized
+----------
+t         
+(1 row)
+
+step w_begin: BEGIN;
+step w_insert: INSERT INTO grain_t VALUES (now() - interval '30 minutes', 1000);
+step w_delete: DELETE FROM grain_t WHERE t < now() - interval '150 minutes';
+step w_update: UPDATE grain_t SET v = v + 1 WHERE t >= now() - interval '90 minutes'
+				  AND t < now() - interval '80 minutes';
+step w_commit: COMMIT;
+step check: SELECT grain_t_differ() AS differ;
+differ
+------
+     0
+(1 row)
+
+step summarize: SELECT grain_summarize('grain_t_g') >= 0 AS summarized;
+summarized
+----------
+t         
+(1 row)
+
+step check: SELECT grain_t_differ() AS differ;
+differ
+------
+     0
+(1 row)
+
+
+starting permutation: o_begin w_begin w_insert w_commit summarize o_check o_commit check
+step o_begin: BEGIN ISOLATION LEVEL REPEATABLE READ; SELECT 1 AS snapshot;
+snapshot
+--------
+       1
+(1 row)
+
+step w_begin: BEGIN;
+step w_insert: INSERT INTO grain_t VALUES (now() - interval '30 minutes', 1000);
+step w_commit: COMMIT;
+step summarize: SELECT grain_summarize('grain_t_g') >= 0 AS summarized;
+summarized
+----------
+t         
+(1 row)
+
+step o_check: SELECT grain_t_differ() AS old_differ;
+old_differ
+----------
+         0
+(1 row)
+
+step o_commit: COMMIT;
+step check: SELECT grain_t_differ() AS differ;
+differ
+------
+     0
+(1 row)
+

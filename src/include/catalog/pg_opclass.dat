@@ -493,4 +493,8 @@
 
 # no brin opclass for the geometric types except box
 
+# grain
+{ opcmethod => 'grain', opcname => 'timestamptz_ops',
+  opcfamily => 'grain/timestamptz_ops', opcintype => 'timestamptz' },
+
 ]
