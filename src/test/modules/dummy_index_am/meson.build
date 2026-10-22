@@ -28,6 +28,17 @@ tests += {
   'regress': {
     'sql': [
       'reloptions',
+      'notify_delete',
+    ],
+  },
+  'isolation': {
+    'specs': [
+      'notify_speculative',
+    ],
+  },
+  'tap': {
+    'tests': [
+      't/001_apply.pl',
     ],
   },
 }

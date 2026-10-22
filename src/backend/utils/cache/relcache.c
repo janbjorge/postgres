@@ -5349,6 +5349,7 @@ RelationGetIndexAttrBitmap(Relation relation, IndexAttrBitmapKind attrKind)
 	Bitmapset  *idindexattrs;	/* columns in the replica identity */
 	Bitmapset  *hotblockingattrs;	/* columns with HOT blocking indexes */
 	Bitmapset  *summarizedattrs;	/* columns with summarizing indexes */
+	bool		hasdeletenotify;	/* an index wants amnotifydelete calls */
 	List	   *indexoidlist;
 	List	   *newindexoidlist;
 	Oid			relpkindex;
@@ -5415,6 +5416,7 @@ restart:
 	idindexattrs = NULL;
 	hotblockingattrs = NULL;
 	summarizedattrs = NULL;
+	hasdeletenotify = false;
 	foreach(l, indexoidlist)
 	{
 		Oid			indexOid = lfirst_oid(l);
@@ -5519,6 +5521,13 @@ restart:
 		/* Collect all attributes in the index predicate, too */
 		pull_varattnos(indexPredicate, 1, attrs);
 
+		/*
+		 * Remember whether any index wants to hear of deletes, so that DELETE
+		 * can skip opening indexes when none does.
+		 */
+		if (indexDesc->rd_indam->amnotifydelete != NULL)
+			hasdeletenotify = true;
+
 		index_close(indexDesc, AccessShareLock);
 	}
 
@@ -5577,6 +5586,7 @@ restart:
 	relation->rd_idattr = bms_copy(idindexattrs);
 	relation->rd_hotblockingattr = bms_copy(hotblockingattrs);
 	relation->rd_summarizedattr = bms_copy(summarizedattrs);
+	relation->rd_hasdeletenotify = hasdeletenotify;
 	relation->rd_attrsvalid = true;
 	MemoryContextSwitchTo(oldcxt);
 
@@ -5597,6 +5607,25 @@ restart:
 			elog(ERROR, "unknown attrKind %u", attrKind);
 			return NULL;
 	}
+}
+
+/*
+ * RelationHasDeleteNotifyIndex -- whether any index on the relation has an
+ * access method that wants amnotifydelete calls
+ *
+ * Computed along with the bitmaps of RelationGetIndexAttrBitmap().
+ */
+bool
+RelationHasDeleteNotifyIndex(Relation relation)
+{
+	if (!relation->rd_rel->relhasindex)
+		return false;
+
+	if (!relation->rd_attrsvalid)
+		bms_free(RelationGetIndexAttrBitmap(relation, INDEX_ATTR_BITMAP_KEY));
+
+	/* not computed if the last index was dropped since relhasindex was set */
+	return relation->rd_attrsvalid && relation->rd_hasdeletenotify;
 }
 
 /*
