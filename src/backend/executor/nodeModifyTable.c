@@ -1238,6 +1238,11 @@ ExecInsert(ModifyTableContext *context,
 			table_tuple_complete_speculative(resultRelationDesc, slot,
 											 specToken, !specConflict);
 
+			/* The indexes were told of the tuple we just killed */
+			if (specConflict)
+				ExecNotifyIndexesOfDelete(resultRelInfo, estate, 0,
+										  &slot->tts_tid, slot);
+
 			/*
 			 * Wake up anyone waiting for our decision.  They will re-check
 			 * the tuple, see that it's no longer speculative, and wait on our
@@ -1552,6 +1557,10 @@ ExecDeleteEpilogue(ModifyTableContext *context, ResultRelInfo *resultRelInfo,
 	ModifyTableState *mtstate = context->mtstate;
 	EState	   *estate = context->estate;
 	TransitionCaptureState *ar_delete_trig_tcs;
+
+	/* Foreign tables and views have no tuple ID */
+	if (ItemPointerIsValid(tupleid))
+		ExecNotifyIndexesOfDelete(resultRelInfo, estate, 0, tupleid, NULL);
 
 	/*
 	 * If this delete is the result of a partition key update that moved the
@@ -2356,7 +2365,8 @@ lreplace:
 static void
 ExecUpdateEpilogue(ModifyTableContext *context, UpdateContext *updateCxt,
 				   ResultRelInfo *resultRelInfo, ItemPointer tupleid,
-				   HeapTuple oldtuple, TupleTableSlot *slot)
+				   HeapTuple oldtuple, TupleTableSlot *oldSlot,
+				   TupleTableSlot *slot)
 {
 	ModifyTableState *mtstate = context->mtstate;
 	List	   *recheckIndexes = NIL;
@@ -2368,6 +2378,8 @@ ExecUpdateEpilogue(ModifyTableContext *context, UpdateContext *updateCxt,
 
 		if (updateCxt->updateIndexes == TU_Summarizing)
 			flags |= EIIT_ONLY_SUMMARIZING;
+		ExecNotifyIndexesOfDelete(resultRelInfo, context->estate, flags,
+								  tupleid, oldSlot);
 		recheckIndexes = ExecInsertIndexTuples(resultRelInfo, context->estate,
 											   flags, slot, NIL,
 											   NULL);
@@ -2747,7 +2759,7 @@ redo_act:
 		(estate->es_processed)++;
 
 	ExecUpdateEpilogue(context, &updateCxt, resultRelInfo, tupleid, oldtuple,
-					   slot);
+					   oldSlot, slot);
 
 	/* Process RETURNING if present */
 	if (resultRelInfo->ri_projectReturning)
@@ -3458,7 +3470,9 @@ lmerge_matched:
 				if (result == TM_Ok)
 				{
 					ExecUpdateEpilogue(context, &updateCxt, resultRelInfo,
-									   tupleid, NULL, newslot);
+									   tupleid, NULL,
+									   resultRelInfo->ri_oldTupleSlot,
+									   newslot);
 					mtstate->mt_merge_updated += 1;
 				}
 				break;
